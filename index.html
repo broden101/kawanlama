@@ -283,71 +283,82 @@
 
     <script type="module">
     import * as FirebaseDB from './firebase.js';
-    window.FirebaseDB = FirebaseDB; // Agar bisa diakses dari fungsi onclick
-      </script>
-      
-    <script>
-        // Data Structure
-        let menuItems = [
-            { id: 1, nama: 'Kopi Malaysia', kategori: 'minuman', harga: 18000, status: 'active' },
-            { id: 2, nama: 'Nasi Goreng', kategori: 'makanan', harga: 25000, status: 'active' },
-            { id: 3, nama: 'Teh Tarik', kategori: 'minuman', harga: 15000, status: 'active' }
-        ];
-        let cart = [];
-        let selectedPayment = 'cash';
-        let transactionHistory = [];
-        let kitchenOrders = [];
+    // Jadikan FirebaseDB dapat diakses secara global
+    window.FirebaseDB = FirebaseDB;
 
-        // Navigation
-        function showPage(page) {
-            document.getElementById('kasir-page').style.display = page === 'kasir' ? 'block' : 'none';
-            document.getElementById('dapur-page').style.display = page === 'dapur' ? 'block' : 'none';
-            document.getElementById('daftar-page').style.display = page === 'daftar' ? 'block' : 'none';
-            document.getElementById('history-page').style.display = page === 'history' ? 'block' : 'none';
+    // Jadikan semua fungsi dapat diakses secara global
+    window.showPage = showPage;
+    window.tambahMenu = tambahMenu;
+    window.editMenu = editMenu;
+    window.toggleStatus = toggleStatus;
+    window.addToCart = addToCart;
+    window.removeFromCart = removeFromCart;
+    window.selectPayment = selectPayment;
+    window.checkout = checkout;
+    window.updateOrderStatus = updateOrderStatus;
+</script>
 
-            document.querySelectorAll('.nav button').forEach(btn => {
-                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(page));
-            });
+<script>
+    // Data Structure
+    window.menuItems = [
+        { id: 1, nama: 'Kopi Malaysia', kategori: 'minuman', harga: 18000, status: 'active' },
+        { id: 2, nama: 'Nasi Goreng', kategori: 'makanan', harga: 25000, status: 'active' },
+        { id: 3, nama: 'Teh Tarik', kategori: 'minuman', harga: 15000, status: 'active' }
+    ];
+    window.cart = [];
+    window.selectedPayment = 'cash';
+    window.transactionHistory = [];
+    window.kitchenOrders = [];
 
-            if (page === 'daftar') renderMenuList();
-            if (page === 'history') renderHistory();
-            if (page === 'dapur') renderDapurOrders();
+    // Navigation
+    function showPage(page) {
+        document.getElementById('kasir-page').style.display = page === 'kasir' ? 'block' : 'none';
+        document.getElementById('dapur-page').style.display = page === 'dapur' ? 'block' : 'none';
+        document.getElementById('daftar-page').style.display = page === 'daftar' ? 'block' : 'none';
+        document.getElementById('history-page').style.display = page === 'history' ? 'block' : 'none';
+
+        document.querySelectorAll('.nav button').forEach(btn => {
+            btn.classList.toggle('active', btn.textContent.toLowerCase().includes(page));
+        });
+
+        if (page === 'daftar') renderMenuList();
+        if (page === 'history') renderHistory();
+        if (page === 'dapur') renderDapurOrders();
+    }
+
+    // Menu Management
+    function tambahMenu() {
+        const nama = prompt("Nama menu:");
+        if (!nama) return;
+
+        const kategori = prompt("Kategori (minuman/makanan):");
+        if (!kategori || !['minuman', 'makanan'].includes(kategori.toLowerCase())) {
+            alert("Kategori harus minuman atau makanan!");
+            return;
         }
 
-        // Menu Management
-        function tambahMenu() {
-            const nama = prompt("Nama menu:");
-            if (!nama) return;
+        const harga = prompt("Harga:");
+        if (!harga || isNaN(harga) || parseInt(harga) <= 0) {
+            alert("Harga harus berupa angka positif!");
+            return;
+        }
 
-            const kategori = prompt("Kategori (minuman/makanan):");
-            if (!kategori || !['minuman', 'makanan'].includes(kategori.toLowerCase())) {
-                alert("Kategori harus minuman atau makanan!");
-                return;
-            }
-
-            const harga = prompt("Harga:");
-            if (!harga || isNaN(harga) || parseInt(harga) <= 0) {
-                alert("Harga harus berupa angka positif!");
-                return;
-            }
-
-            const newMenu = {
-                id: menuItems.length + 1,
-                nama: nama,
-                kategori: kategori.toLowerCase(),
-                harga: parseInt(harga),
-                status: 'active'
-            };
-            
-                // Simpan ke Firebase
-                FirebaseDB.saveMenu(newMenu)
-                    .then(() => {
-                        alert('Menu berhasil ditambahkan!');
-                    })
-                    .catch((error) => {
-                        alert('Error: ' + error.message);
-                    });
-            }
+        const newMenu = {
+            nama: nama,
+            kategori: kategori.toLowerCase(),
+            harga: parseInt(harga),
+            status: 'active'
+        };
+        
+        // Simpan ke Firebase
+        FirebaseDB.saveMenu(newMenu)
+            .then(() => {
+                alert('Menu berhasil ditambahkan!');
+            })
+            .catch((error) => {
+                alert('Error: ' + error.message);
+            });
+    }
 
         function editMenu(id) {
             const menu = menuItems.find(item => item.id === id);
@@ -602,22 +613,24 @@
 
         // Initialize
         renderMenu();
-                FirebaseDB.listenToMenu((menuItems) => {
-            window.menuItems = menuItems;
+        
+        // Listeners Firebase
+        FirebaseDB.listenToMenu((items) => {
+            window.menuItems = items;
             renderMenu();
             renderMenuList();
         });
-        
+    
         FirebaseDB.listenToOrders((orders) => {
             window.kitchenOrders = orders;
             renderDapurOrders();
         });
-        
+    
         FirebaseDB.listenToHistory((history) => {
             window.transactionHistory = history;
             renderHistory();
         });
-        
+    
         // Auto refresh dapur orders
         setInterval(() => {
             if (document.getElementById('dapur-page').style.display === 'block') {
@@ -625,7 +638,6 @@
             }
         }, 30000);
     </script>
-    <script src="script.js"></script>
 
 </body>
 </html>
