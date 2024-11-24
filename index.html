@@ -362,11 +362,15 @@
                 status: 'active'
             };
             
-            menuItems.push(newMenu);
-            renderMenuList();
-            renderMenu();
-            FirebaseDB.saveMenu(newMenu);
-        }
+                // Simpan ke Firebase
+                FirebaseDB.saveMenu(newMenu)
+                    .then(() => {
+                        alert('Menu berhasil ditambahkan!');
+                    })
+                    .catch((error) => {
+                        alert('Error: ' + error.message);
+                    });
+            }
 
         function editMenu(id) {
             const menu = menuItems.find(item => item.id === id);
