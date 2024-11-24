@@ -283,30 +283,7 @@
 
     <script type="module">
     import * as FirebaseDB from './firebase.js';
-        // Import the functions you need from the SDKs you need
-        
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
-      
-        // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-          apiKey: "AIzaSyDglb9lO6b7mMnDzOwE1i9hWGUNpwPrcKs",
-          authDomain: "kawan-lama-542e6.firebaseapp.com",
-          databaseURL: "https://kawan-lama-542e6-default-rtdb.asia-southeast1.firebasedatabase.app",
-          projectId: "kawan-lama-542e6",
-          storageBucket: "kawan-lama-542e6.firebasestorage.app",
-          messagingSenderId: "1013787942051",
-          appId: "1:1013787942051:web:fa198540c5a610aa577316",
-          measurementId: "G-MPX5RR24J5"
-        };
-      
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-         window.FirebaseDB = FirebaseDB; // Agar bisa diakses dari fungsi onclick
+    window.FirebaseDB = FirebaseDB; // Agar bisa diakses dari fungsi onclick
       </script>
       
     <script>
@@ -498,11 +475,34 @@
             const order = {
                 orderNumber: `A${String(kitchenOrders.length + 1).padStart(3, '0')}`,
                 status: 'new',
-                items: cart,
+                time: new Date().toISOString(),
+                items: cart.map(item => ({
+                    name: item.nama,
+                    quantity: item.quantity
+                })),
                 total: total,
-                paymentMethod: selectedPayment,
-                time: new Date().toISOString()
+                paymentMethod: selectedPayment
             };
+            // Save to Firebase
+            FirebaseDB.saveOrder(order)
+                    .then(() => {
+                        // Save transaction history
+                        return FirebaseDB.saveTransaction({
+                            date: new Date().toISOString(),
+                            items: [...cart],
+                            total: total,
+                            paymentMethod: selectedPayment
+                        });
+                    })
+                    .then(() => {
+                        alert(`Pembayaran ${selectedPayment.toUpperCase()} berhasil!\nTotal: Rp ${total.toLocaleString()}`);
+                        cart = [];
+                        updateCart();
+                    })
+                    .catch((error) => {
+                        alert('Error: ' + error.message);
+                    });
+            }
             // Add to transaction history
             transactionHistory.push({
                 date: new Date().toLocaleString(),
