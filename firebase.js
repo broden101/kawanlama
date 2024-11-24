@@ -71,6 +71,10 @@ export function saveTransaction(transaction) {
     return push(historyRef, transaction);
 }
 
+export function deleteTransaction(transactionId) {
+    return db.ref(`transactions/${transactionId}`).remove();
+}
+
 export function listenToHistory(callback) {
     onValue(historyRef, (snapshot) => {
         const data = snapshot.val();
