@@ -205,7 +205,7 @@
             background: #28a745;
         }
     </style>
-    <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
     <div class="header">
@@ -282,10 +282,10 @@
     </div>
 
     <script type="module">
-    import * as FirebaseDB from './firebase.js';
-    // Jadikan FirebaseDB dapat diakses secara global
-    window.FirebaseDB = FirebaseDB;
-
+        import * as FirebaseDB from './firebase.js';
+        window.FirebaseDB = FirebaseDB;
+    </script>
+    
     // Jadikan semua fungsi dapat diakses secara global
     window.showPage = showPage;
     window.tambahMenu = tambahMenu;
