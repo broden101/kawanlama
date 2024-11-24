@@ -293,7 +293,6 @@
                             <th>Items</th>
                             <th>Total</th>
                             <th>Pembayaran</th>
-                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="history-list"></tbody>
@@ -527,29 +526,10 @@
                             ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
                         </span>
                     </td>
-                    <td>
-                        <button class="action-btn toggle-btn-active" 
-                                onclick="deleteTransaction('${transaction.id}')">
-                            Hapus
-                        </button>
-                    </td>
                 </tr>
             `).join('');
-
-        function deleteTransaction(transactionId) {
-            const confirmation = confirm("Apakah Anda yakin ingin menghapus transaksi ini?");
-            if (confirmation) {
-                FirebaseDB.deleteTransaction(transactionId)
-                    .then(() => {
-                        alert("Transaksi berhasil dihapus!");
-                        renderHistory(); // Perbarui tampilan riwayat
-                    })
-                    .catch((error) => {
-                        alert("Terjadi kesalahan saat menghapus transaksi: " + error.message);
-                    });
-            }
         }
-
+    
         function renderDapurOrders() {
             const container = document.getElementById('dapur-orders');
             container.innerHTML = kitchenOrders.map(order => `
