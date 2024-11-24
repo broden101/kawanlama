@@ -71,12 +71,6 @@ export function saveTransaction(transaction) {
     return push(historyRef, transaction);
 }
 
-export function deleteMenuItem(id) {
-    const menuItemRef = ref(db, `menu/${id}`);
-    return remove(menuItemRef);
-
-}
-
 export function listenToHistory(callback) {
     onValue(historyRef, (snapshot) => {
         const data = snapshot.val();
