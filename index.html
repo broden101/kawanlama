@@ -280,133 +280,34 @@
             </div>
         </div>
     </div>
-
     <script type="module">
         import * as FirebaseDB from './firebase.js';
-        window.FirebaseDB = FirebaseDB;
-    </script>
     
-    // Jadikan semua fungsi dapat diakses secara global
-    window.showPage = showPage;
-    window.tambahMenu = tambahMenu;
-    window.editMenu = editMenu;
-    window.toggleStatus = toggleStatus;
-    window.addToCart = addToCart;
-    window.removeFromCart = removeFromCart;
-    window.selectPayment = selectPayment;
-    window.checkout = checkout;
-    window.updateOrderStatus = updateOrderStatus;
-
-    // Kemudian jadikan global
-    window.FirebaseDB = FirebaseDB;
-    window.showPage = showPage;
-    window.tambahMenu = tambahMenu;
-    window.editMenu = editMenu;
-    window.toggleStatus = toggleStatus;
-    window.addToCart = addToCart;
-    window.removeFromCart = removeFromCart;
-    window.selectPayment = selectPayment;
-    window.checkout = checkout;
-    window.updateOrderStatus = updateOrderStatus;
-
-<script>
-    // Data Structure
-    window.menuItems = [
-        { id: 1, nama: 'Kopi Malaysia', kategori: 'minuman', harga: 18000, status: 'active' },
-        { id: 2, nama: 'Nasi Goreng', kategori: 'makanan', harga: 25000, status: 'active' },
-        { id: 3, nama: 'Teh Tarik', kategori: 'minuman', harga: 15000, status: 'active' }
-    ];
-    window.cart = [];
-    window.selectedPayment = 'cash';
-    window.transactionHistory = [];
-    window.kitchenOrders = [];
-
-    // Navigation
-    function showPage(page) {
-        document.getElementById('kasir-page').style.display = page === 'kasir' ? 'block' : 'none';
-        document.getElementById('dapur-page').style.display = page === 'dapur' ? 'block' : 'none';
-        document.getElementById('daftar-page').style.display = page === 'daftar' ? 'block' : 'none';
-        document.getElementById('history-page').style.display = page === 'history' ? 'block' : 'none';
-
-        document.querySelectorAll('.nav button').forEach(btn => {
-            btn.classList.toggle('active', btn.textContent.toLowerCase().includes(page));
-        });
-
-        if (page === 'daftar') renderMenuList();
-        if (page === 'history') renderHistory();
-        if (page === 'dapur') renderDapurOrders();
-    }
-
-    // Menu Management
-    function tambahMenu() {
-        const nama = prompt("Nama menu:");
-        if (!nama) return;
-
-        const kategori = prompt("Kategori (minuman/makanan):");
-        if (!kategori || !['minuman', 'makanan'].includes(kategori.toLowerCase())) {
-            alert("Kategori harus minuman atau makanan!");
-            return;
+        // Data Structure
+        let menuItems = [
+            { id: 1, nama: 'Kopi Malaysia', kategori: 'minuman', harga: 18000, status: 'active' },
+            { id: 2, nama: 'Nasi Goreng', kategori: 'makanan', harga: 25000, status: 'active' },
+            { id: 3, nama: 'Teh Tarik', kategori: 'minuman', harga: 15000, status: 'active' }
+        ];
+        let cart = [];
+        let selectedPayment = 'cash';
+        let transactionHistory = [];
+        let kitchenOrders = [];
+    
+        // 1. Menu Functions
+        function renderMenu() {
+            const container = document.getElementById('menu-container');
+            const activeMenus = menuItems.filter(item => item.status === 'active');
+            
+            container.innerHTML = activeMenus.map(item => `
+                <div class="menu-item" onclick="addToCart('${item.id}')">
+                    <img src="https://via.placeholder.com/200x150" alt="${item.nama}">
+                    <h3>${item.nama}</h3>
+                    <p>Rp ${item.harga.toLocaleString()}</p>
+                </div>
+            `).join('');
         }
-
-        const harga = prompt("Harga:");
-        if (!harga || isNaN(harga) || parseInt(harga) <= 0) {
-            alert("Harga harus berupa angka positif!");
-            return;
-        }
-
-        const newMenu = {
-            nama: nama,
-            kategori: kategori.toLowerCase(),
-            harga: parseInt(harga),
-            status: 'active'
-        };
-        
-        // Simpan ke Firebase
-        FirebaseDB.saveMenu(newMenu)
-            .then(() => {
-                alert('Menu berhasil ditambahkan!');
-            })
-            .catch((error) => {
-                alert('Error: ' + error.message);
-            });
-    }
-
-        function editMenu(id) {
-            const menu = menuItems.find(item => item.id === id);
-            if (!menu) return;
-
-            const nama = prompt("Nama menu:", menu.nama);
-            if (!nama) return;
-
-            const kategori = prompt("Kategori (minuman/makanan):", menu.kategori);
-            if (!kategori || !['minuman', 'makanan'].includes(kategori.toLowerCase())) {
-                alert("Kategori harus minuman atau makanan!");
-                return;
-            }
-
-            const harga = prompt("Harga:", menu.harga);
-            if (!harga || isNaN(harga) || parseInt(harga) <= 0) {
-                alert("Harga harus berupa angka positif!");
-                return;
-            }
-
-            menu.nama = nama;
-            menu.kategori = kategori.toLowerCase();
-            menu.harga = parseInt(harga);
-
-            renderMenuList();
-            renderMenu();
-        }
-
-        function toggleStatus(id) {
-            const menu = menuItems.find(item => item.id === id);
-            if (menu) {
-                menu.status = menu.status === 'active' ? 'inactive' : 'active';
-                renderMenuList();
-                renderMenu();
-            }
-        }
-
+    
         function renderMenuList() {
             const container = document.getElementById('menu-list');
             container.innerHTML = menuItems.map(item => `
@@ -420,51 +321,125 @@
                         </span>
                     </td>
                     <td>
-                        <button class="action-btn edit-btn" onclick="editMenu(${item.id})">
+                        <button class="action-btn edit-btn" onclick="editMenu('${item.id}')">
                             Edit
                         </button>
                         <button class="action-btn ${item.status === 'active' ? 'toggle-btn-active' : 'toggle-btn-inactive'}" 
-                            onclick="toggleStatus(${item.id})">
+                            onclick="toggleStatus('${item.id}')">
                             ${item.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
                         </button>
                     </td>
                 </tr>
             `).join('');
         }
-
-        // Kasir Functions
-        function renderMenu() {
-            const container = document.getElementById('menu-container');
-            const activeMenus = menuItems.filter(item => item.status === 'active');
+    
+        function tambahMenu() {
+            const nama = prompt("Nama menu:");
+            if (!nama) return;
+    
+            const kategori = prompt("Kategori (minuman/makanan):");
+            if (!kategori || !['minuman', 'makanan'].includes(kategori.toLowerCase())) {
+                alert("Kategori harus minuman atau makanan!");
+                return;
+            }
+    
+            const harga = prompt("Harga:");
+            if (!harga || isNaN(harga) || parseInt(harga) <= 0) {
+                alert("Harga harus berupa angka positif!");
+                return;
+            }
+    
+            const newMenu = {
+                nama: nama,
+                kategori: kategori.toLowerCase(),
+                harga: parseInt(harga),
+                status: 'active'
+            };
             
-            container.innerHTML = activeMenus.map(item => `
-                <div class="menu-item" onclick="addToCart(${item.id})">
-                    <img src="/api/placeholder/200/150" alt="${item.nama}">
-                    <h3>${item.nama}</h3>
-                    <p>Rp ${item.harga.toLocaleString()}</p>
-                </div>
-            `).join('');
+            FirebaseDB.saveMenu(newMenu)
+                .then(() => {
+                    alert('Menu berhasil ditambahkan!');
+                })
+                .catch((error) => {
+                    alert('Error: ' + error.message);
+                });
         }
-
+    
+        function editMenu(id) {
+            const menu = menuItems.find(item => item.id === id);
+            if (!menu) return;
+    
+            const nama = prompt("Nama menu:", menu.nama);
+            if (!nama) return;
+    
+            const kategori = prompt("Kategori (minuman/makanan):", menu.kategori);
+            if (!kategori || !['minuman', 'makanan'].includes(kategori.toLowerCase())) {
+                alert("Kategori harus minuman atau makanan!");
+                return;
+            }
+    
+            const harga = prompt("Harga:", menu.harga);
+            if (!harga || isNaN(harga) || parseInt(harga) <= 0) {
+                alert("Harga harus berupa angka positif!");
+                return;
+            }
+    
+            const updates = {
+                nama: nama,
+                kategori: kategori.toLowerCase(),
+                harga: parseInt(harga)
+            };
+    
+            FirebaseDB.updateMenuItem(id, updates)
+                .then(() => {
+                    alert('Menu berhasil diupdate!');
+                })
+                .catch((error) => {
+                    alert('Error: ' + error.message);
+                });
+        }
+    
+        function toggleStatus(id) {
+            const menu = menuItems.find(item => item.id === id);
+            if (menu) {
+                const newStatus = menu.status === 'active' ? 'inactive' : 'active';
+                FirebaseDB.updateMenuItem(id, { status: newStatus })
+                    .then(() => {
+                        alert(`Menu berhasil ${newStatus === 'active' ? 'diaktifkan' : 'dinonaktifkan'}!`);
+                    })
+                    .catch((error) => {
+                        alert('Error: ' + error.message);
+                    });
+            }
+        }
+    
+        // 2. Cart Functions
         function addToCart(id) {
             const item = menuItems.find(item => item.id === id);
-            const existingItem = cart.find(cartItem => cartItem.id === id);
+            if (!item) return;
             
-            if (existingItem) existingItem.quantity++;
-            else cart.push({ ...item, quantity: 1 });
+            const existingItem = cart.find(cartItem => cartItem.id === id);
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({ ...item, quantity: 1 });
+            }
             
             updateCart();
         }
-
+    
         function removeFromCart(id) {
             const index = cart.findIndex(item => item.id === id);
             if (index !== -1) {
-                if (cart[index].quantity > 1) cart[index].quantity--;
-                else cart.splice(index, 1);
+                if (cart[index].quantity > 1) {
+                    cart[index].quantity--;
+                } else {
+                    cart.splice(index, 1);
+                }
                 updateCart();
             }
         }
-
+    
         function updateCart() {
             const cartContainer = document.getElementById('cart-items');
             cartContainer.innerHTML = cart.map(item => `
@@ -472,29 +447,29 @@
                     <span>${item.nama} x ${item.quantity}</span>
                     <span>
                         Rp ${(item.harga * item.quantity).toLocaleString()}
-                        <button onclick="removeFromCart(${item.id})">-</button>
+                        <button onclick="removeFromCart('${item.id}')">-</button>
                     </span>
                 </div>
             `).join('');
-
+    
             const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
             document.getElementById('total').textContent = total.toLocaleString();
         }
-
+    
         function selectPayment(method) {
             selectedPayment = method;
             document.getElementById('cash-btn').classList.toggle('selected', method === 'cash');
             document.getElementById('qris-btn').classList.toggle('selected', method === 'qris');
         }
-
+    
+        // 3. Checkout Function
         function checkout() {
             if (cart.length === 0) {
                 alert('Keranjang masih kosong!');
                 return;
             }
-
+    
             const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
-            
             const order = {
                 orderNumber: `A${String(kitchenOrders.length + 1).padStart(3, '0')}`,
                 status: 'new',
@@ -506,69 +481,53 @@
                 total: total,
                 paymentMethod: selectedPayment
             };
-            // Save to Firebase
+    
             FirebaseDB.saveOrder(order)
-                    .then(() => {
-                        // Save transaction history
-                        return FirebaseDB.saveTransaction({
-                            date: new Date().toISOString(),
-                            items: [...cart],
-                            total: total,
-                            paymentMethod: selectedPayment
-                        });
-                    })
-                    .then(() => {
-                        alert(`Pembayaran ${selectedPayment.toUpperCase()} berhasil!\nTotal: Rp ${total.toLocaleString()}`);
-                        cart = [];
-                        updateCart();
-                    })
-                    .catch((error) => {
-                        alert('Error: ' + error.message);
+                .then(() => {
+                    return FirebaseDB.saveTransaction({
+                        date: new Date().toISOString(),
+                        items: [...cart],
+                        total: total,
+                        paymentMethod: selectedPayment
                     });
-            }
-            // Add to transaction history
-            transactionHistory.push({
-                date: new Date().toLocaleString(),
-                items: [...cart],
-                total: total,
-                paymentMethod: selectedPayment
-            });
-
-            // Add to kitchen orders
-            kitchenOrders.push({
-                id: Date.now(),
-                orderNumber: `A${String(kitchenOrders.length + 1).padStart(3, '0')}`,
-                status: 'new',
-                time: new Date(),
-                items: cart.map(item => ({
-                    name: item.nama,
-                    quantity: item.quantity
-                }))
-                FirebaseDB.saveOrder(order);
-                FirebaseDB.saveTransaction({
-                    date: new Date().toISOString(),
-                    items: [...cart],
-                    total: total,
-                    paymentMethod: selectedPayment
+                })
+                .then(() => {
+                    alert(`Pembayaran ${selectedPayment.toUpperCase()} berhasil!\nTotal: Rp ${total.toLocaleString()}`);
+                    cart = [];
+                    updateCart();
+                })
+                .catch((error) => {
+                    alert('Error: ' + error.message);
                 });
-
+        }
+    
+        // 4. Navigation Function
+        function showPage(page) {
+            document.getElementById('kasir-page').style.display = page === 'kasir' ? 'block' : 'none';
+            document.getElementById('dapur-page').style.display = page === 'dapur' ? 'block' : 'none';
+            document.getElementById('daftar-page').style.display = page === 'daftar' ? 'block' : 'none';
+            document.getElementById('history-page').style.display = page === 'history' ? 'block' : 'none';
+    
+            document.querySelectorAll('.nav button').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(page));
             });
-
-            alert(`Pembayaran ${selectedPayment.toUpperCase()} berhasil!\nTotal: Rp ${total.toLocaleString()}`);
-            cart = [];
-            updateCart();
-            renderDapurOrders();
+    
+            if (page === 'daftar') renderMenuList();
+            if (page === 'history') renderHistory();
+            if (page === 'dapur') renderDapurOrders();
         }
-
-        // Dapur Functions
+    
+        // 5. Kitchen Functions
         function updateOrderStatus(orderId, newStatus) {
-            const order = kitchenOrders.find(o => o.id === orderId);
-            if (order) {
-                order.status = newStatus;
-                renderDapurOrders();
-            }
+            FirebaseDB.updateOrderStatus(orderId, newStatus)
+                .then(() => {
+                    renderDapurOrders();
+                })
+                .catch((error) => {
+                    alert('Error: ' + error.message);
+                });
         }
-
+    
         function renderDapurOrders() {
             const container = document.getElementById('dapur-orders');
             container.innerHTML = kitchenOrders.map(order => `
@@ -581,7 +540,7 @@
                         </span>
                     </div>
                     <div style="color: #666; margin-bottom: 10px;">
-                        ${order.time.toLocaleTimeString()}
+                        ${new Date(order.time).toLocaleTimeString()}
                     </div>
                     <div style="margin: 10px 0;">
                         ${order.items.map(item => `
@@ -592,41 +551,54 @@
                         `).join('')}
                     </div>
                     ${order.status === 'new' ? `
-                        <button class="btn btn-start" onclick="updateOrderStatus(${order.id}, 'cooking')">
+                        <button class="btn btn-start" onclick="updateOrderStatus('${order.id}', 'cooking')">
                             Mulai Masak
                         </button>
                     ` : order.status === 'cooking' ? `
-                        <button class="btn btn-complete" onclick="updateOrderStatus(${order.id}, 'ready')">
+                        <button class="btn btn-complete" onclick="updateOrderStatus('${order.id}', 'ready')">
                             Selesai
                         </button>
                     ` : ''}
                 </div>
             `).join('');
         }
-
+    
+        // 6. History Function
         function renderHistory() {
             const container = document.getElementById('history-list');
             container.innerHTML = transactionHistory.map(transaction => `
-            <tr>
-             <td>${transaction.date}</td>
-             <td>${transaction.items.map(item => 
-                `${item.nama} (x${item.quantity})`).join(', ')}
-            </td>
-            <td>Rp ${transaction.total.toLocaleString()}</td>
-            <td>
-                <span class="status-badge" 
-                    style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
-                    ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
-                </span>
-            </td>
-            </tr>
-        `).join('');
-}
-
-        // Initialize
+                <tr>
+                    <td>${new Date(transaction.date).toLocaleString()}</td>
+                    <td>${transaction.items.map(item => 
+                        `${item.nama} (x${item.quantity})`).join(', ')}
+                    </td>
+                    <td>Rp ${transaction.total.toLocaleString()}</td>
+                    <td>
+                        <span class="status-badge" 
+                            style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
+                            ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    
+        // 7. Make functions globally accessible
+        window.FirebaseDB = FirebaseDB;
+        window.showPage = showPage;
+        window.tambahMenu = tambahMenu;
+        window.editMenu = editMenu;
+        window.toggleStatus = toggleStatus;
+        window.addToCart = addToCart;
+        window.removeFromCart = removeFromCart;
+        window.selectPayment = selectPayment;
+        window.checkout = checkout;
+        window.updateOrderStatus = updateOrderStatus;
+    
+        // 8. Initialize
         renderMenu();
         
-        // Listeners Firebase
+        // 9. Setup Firebase listeners
         FirebaseDB.listenToMenu((items) => {
             window.menuItems = items;
             renderMenu();
@@ -643,13 +615,12 @@
             renderHistory();
         });
     
-        // Auto refresh dapur orders
+        // 10. Auto refresh dapur orders
         setInterval(() => {
             if (document.getElementById('dapur-page').style.display === 'block') {
                 renderDapurOrders();
             }
         }, 30000);
     </script>
-
 </body>
 </html>
