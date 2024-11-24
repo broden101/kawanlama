@@ -306,6 +306,7 @@
                     <p>Rp ${item.harga.toLocaleString()}</p>
                 </div>
             `).join('');
+            console.log('Menu items:', menuItems); // Untuk debugging
         }
     
         function renderMenuList() {
@@ -414,29 +415,28 @@
         }
     
         // 2. Cart Functions
-        function addToCart(id) {
-            const item = menuItems.find(item => item.id === id);
-            if (!item) return;
-            
-            const existingItem = cart.find(cartItem => cartItem.id === id);
-            if (existingItem) {
-                existingItem.quantity++;
-            } else {
-                cart.push({ ...item, quantity: 1 });
-            }
-            
-            updateCart();
-        }
-    
-        function removeFromCart(id) {
-            const index = cart.findIndex(item => item.id === id);
-            if (index !== -1) {
-                if (cart[index].quantity > 1) {
-                    cart[index].quantity--;
-                } else {
-                    cart.splice(index, 1);
+            function addToCart(id) {
+                console.log('Adding to cart, id:', id); // Untuk debugging
+                console.log('Current menuItems:', menuItems); // Untuk debugging
+                
+                const item = menuItems.find(item => item.id === id);
+                console.log('Found item:', item); // Untuk debugging
+                
+                if (!item) {
+                    console.log('Item not found!'); // Untuk debugging
+                    return;
                 }
+                
+                const existingItem = cart.find(cartItem => cartItem.id === id);
+                if (existingItem) {
+                    existingItem.quantity++;
+                } else {
+                    cart.push({ ...item, quantity: 1 });
+                }
+                
+                console.log('Current cart:', cart); // Untuk debugging
                 updateCart();
+            }
             }
         }
     
@@ -600,6 +600,7 @@
         
         // 9. Setup Firebase listeners
         FirebaseDB.listenToMenu((items) => {
+            console.log('Received items from Firebase:', items); // Untuk debugging
             window.menuItems = items;
             renderMenu();
             renderMenuList();
