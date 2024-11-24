@@ -283,21 +283,21 @@
     <script type="module">
         import * as FirebaseDB from './firebase.js';
     
-        // Data Structure
-        let menuItems = [
+        // 1. Inisialisasi variabel global
+        window.menuItems = [
             { id: 1, nama: 'Kopi Malaysia', kategori: 'minuman', harga: 18000, status: 'active' },
             { id: 2, nama: 'Nasi Goreng', kategori: 'makanan', harga: 25000, status: 'active' },
             { id: 3, nama: 'Teh Tarik', kategori: 'minuman', harga: 15000, status: 'active' }
         ];
-        let cart = [];
-        let selectedPayment = 'cash';
-        let transactionHistory = [];
-        let kitchenOrders = [];
+        window.cart = [];
+        window.selectedPayment = 'cash';
+        window.transactionHistory = [];
+        window.kitchenOrders = [];
     
-        // 1. Menu Functions
+        // 2. Definisi Fungsi
         function renderMenu() {
             const container = document.getElementById('menu-container');
-            const activeMenus = menuItems.filter(item => item.status === 'active');
+            const activeMenus = window.menuItems.filter(item => item.status === 'active');
             
             container.innerHTML = activeMenus.map(item => `
                 <div class="menu-item" onclick="addToCart('${item.id}')">
@@ -306,12 +306,11 @@
                     <p>Rp ${item.harga.toLocaleString()}</p>
                 </div>
             `).join('');
-            console.log('Menu items:', menuItems); // Untuk debugging
         }
     
         function renderMenuList() {
             const container = document.getElementById('menu-list');
-            container.innerHTML = menuItems.map(item => `
+            container.innerHTML = window.menuItems.map(item => `
                 <tr>
                     <td>${item.nama}</td>
                     <td>${item.kategori}</td>
@@ -366,8 +365,109 @@
                 });
         }
     
+        function addToCart(id) {
+            const item = window.menuItems.find(item => item.id === id);
+            if (!item) return;
+            
+            const existingItem = window.cart.find(cartItem => cartItem.id === id);
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                window.cart.push({ ...item, quantity: 1 });
+            }
+            
+            updateCart();
+        }
+    
+        function removeFromCart(id) {
+            const index = window.cart.findIndex(item => item.id === id);
+            if (index !== -1) {
+                if (window.cart[index].quantity > 1) {
+                    window.cart[index].quantity--;
+                } else {
+                    window.cart.splice(index, 1);
+                }
+                updateCart();
+            }
+        }
+    
+        function updateCart() {
+            const cartContainer = document.getElementById('cart-items');
+            cartContainer.innerHTML = window.cart.map(item => `
+                <div class="cart-item">
+                    <span>${item.nama} x ${item.quantity}</span>
+                    <span>
+                        Rp ${(item.harga * item.quantity).toLocaleString()}
+                        <button onclick="removeFromCart('${item.id}')">-</button>
+                    </span>
+                </div>
+            `).join('');
+    
+            const total = window.cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
+            document.getElementById('total').textContent = total.toLocaleString();
+        }
+    
+        function selectPayment(method) {
+            window.selectedPayment = method;
+            document.getElementById('cash-btn').classList.toggle('selected', method === 'cash');
+            document.getElementById('qris-btn').classList.toggle('selected', method === 'qris');
+        }
+    
+        function checkout() {
+            if (window.cart.length === 0) {
+                alert('Keranjang masih kosong!');
+                return;
+            }
+    
+            const total = window.cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
+            const order = {
+                orderNumber: `A${String(window.kitchenOrders.length + 1).padStart(3, '0')}`,
+                status: 'new',
+                time: new Date().toISOString(),
+                items: window.cart.map(item => ({
+                    name: item.nama,
+                    quantity: item.quantity
+                })),
+                total: total,
+                paymentMethod: window.selectedPayment
+            };
+    
+            FirebaseDB.saveOrder(order)
+                .then(() => {
+                    return FirebaseDB.saveTransaction({
+                        date: new Date().toISOString(),
+                        items: [...window.cart],
+                        total: total,
+                        paymentMethod: window.selectedPayment
+                    });
+                })
+                .then(() => {
+                    alert(`Pembayaran ${window.selectedPayment.toUpperCase()} berhasil!\nTotal: Rp ${total.toLocaleString()}`);
+                    window.cart = [];
+                    updateCart();
+                })
+                .catch((error) => {
+                    alert('Error: ' + error.message);
+                });
+        }
+    
+        function showPage(page) {
+            document.getElementById('kasir-page').style.display = page === 'kasir' ? 'block' : 'none';
+            document.getElementById('dapur-page').style.display = page === 'dapur' ? 'block' : 'none';
+            document.getElementById('daftar-page').style.display = page === 'daftar' ? 'block' : 'none';
+            document.getElementById('history-page').style.display = page === 'history' ? 'block' : 'none';
+    
+            document.querySelectorAll('.nav button').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(page));
+            });
+    
+            if (page === 'daftar') renderMenuList();
+            if (page === 'history') renderHistory();
+            if (page === 'dapur') renderDapurOrders();
+        }
+    
         function editMenu(id) {
-            const menu = menuItems.find(item => item.id === id);
+            const menu = window.menuItems.find(item => item.id === id);
             if (!menu) return;
     
             const nama = prompt("Nama menu:", menu.nama);
@@ -401,7 +501,7 @@
         }
     
         function toggleStatus(id) {
-            const menu = menuItems.find(item => item.id === id);
+            const menu = window.menuItems.find(item => item.id === id);
             if (menu) {
                 const newStatus = menu.status === 'active' ? 'inactive' : 'active';
                 FirebaseDB.updateMenuItem(id, { status: newStatus })
@@ -414,110 +514,6 @@
             }
         }
     
-        // 2. Cart Functions
-            function addToCart(id) {
-                console.log('Adding to cart, id:', id); // Untuk debugging
-                console.log('Current menuItems:', menuItems); // Untuk debugging
-                
-                const item = menuItems.find(item => item.id === id);
-                console.log('Found item:', item); // Untuk debugging
-                
-                if (!item) {
-                    console.log('Item not found!'); // Untuk debugging
-                    return;
-                }
-                
-                const existingItem = cart.find(cartItem => cartItem.id === id);
-                if (existingItem) {
-                    existingItem.quantity++;
-                } else {
-                    cart.push({ ...item, quantity: 1 });
-                }
-                
-                console.log('Current cart:', cart); // Untuk debugging
-                updateCart();
-            }
-            }
-        }
-    
-        function updateCart() {
-            const cartContainer = document.getElementById('cart-items');
-            cartContainer.innerHTML = cart.map(item => `
-                <div class="cart-item">
-                    <span>${item.nama} x ${item.quantity}</span>
-                    <span>
-                        Rp ${(item.harga * item.quantity).toLocaleString()}
-                        <button onclick="removeFromCart('${item.id}')">-</button>
-                    </span>
-                </div>
-            `).join('');
-    
-            const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
-            document.getElementById('total').textContent = total.toLocaleString();
-        }
-    
-        function selectPayment(method) {
-            selectedPayment = method;
-            document.getElementById('cash-btn').classList.toggle('selected', method === 'cash');
-            document.getElementById('qris-btn').classList.toggle('selected', method === 'qris');
-        }
-    
-        // 3. Checkout Function
-        function checkout() {
-            if (cart.length === 0) {
-                alert('Keranjang masih kosong!');
-                return;
-            }
-    
-            const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
-            const order = {
-                orderNumber: `A${String(kitchenOrders.length + 1).padStart(3, '0')}`,
-                status: 'new',
-                time: new Date().toISOString(),
-                items: cart.map(item => ({
-                    name: item.nama,
-                    quantity: item.quantity
-                })),
-                total: total,
-                paymentMethod: selectedPayment
-            };
-    
-            FirebaseDB.saveOrder(order)
-                .then(() => {
-                    return FirebaseDB.saveTransaction({
-                        date: new Date().toISOString(),
-                        items: [...cart],
-                        total: total,
-                        paymentMethod: selectedPayment
-                    });
-                })
-                .then(() => {
-                    alert(`Pembayaran ${selectedPayment.toUpperCase()} berhasil!\nTotal: Rp ${total.toLocaleString()}`);
-                    cart = [];
-                    updateCart();
-                })
-                .catch((error) => {
-                    alert('Error: ' + error.message);
-                });
-        }
-    
-        // 4. Navigation Function
-        function showPage(page) {
-            document.getElementById('kasir-page').style.display = page === 'kasir' ? 'block' : 'none';
-            document.getElementById('dapur-page').style.display = page === 'dapur' ? 'block' : 'none';
-            document.getElementById('daftar-page').style.display = page === 'daftar' ? 'block' : 'none';
-            document.getElementById('history-page').style.display = page === 'history' ? 'block' : 'none';
-    
-            document.querySelectorAll('.nav button').forEach(btn => {
-                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(page));
-            });
-    
-            if (page === 'daftar') renderMenuList();
-            if (page === 'history') renderHistory();
-            if (page === 'dapur') renderDapurOrders();
-        }
-    
-        // 5. Kitchen Functions
         function updateOrderStatus(orderId, newStatus) {
             FirebaseDB.updateOrderStatus(orderId, newStatus)
                 .then(() => {
@@ -530,7 +526,7 @@
     
         function renderDapurOrders() {
             const container = document.getElementById('dapur-orders');
-            container.innerHTML = kitchenOrders.map(order => `
+            container.innerHTML = window.kitchenOrders.map(order => `
                 <div class="order-card">
                     <div class="order-header">
                         <span class="order-number">${order.orderNumber}</span>
@@ -563,10 +559,9 @@
             `).join('');
         }
     
-        // 6. History Function
         function renderHistory() {
             const container = document.getElementById('history-list');
-            container.innerHTML = transactionHistory.map(transaction => `
+            container.innerHTML = window.transactionHistory.map(transaction => `
                 <tr>
                     <td>${new Date(transaction.date).toLocaleString()}</td>
                     <td>${transaction.items.map(item => 
@@ -583,8 +578,7 @@
             `).join('');
         }
     
-        // 7. Make functions globally accessible
-        window.FirebaseDB = FirebaseDB;
+        // 3. Jadikan fungsi-fungsi tersedia secara global
         window.showPage = showPage;
         window.tambahMenu = tambahMenu;
         window.editMenu = editMenu;
@@ -595,12 +589,11 @@
         window.checkout = checkout;
         window.updateOrderStatus = updateOrderStatus;
     
-        // 8. Initialize
+        // 4. Initialize
         renderMenu();
-        
-        // 9. Setup Firebase listeners
+    
+        // 5. Setup Firebase listeners
         FirebaseDB.listenToMenu((items) => {
-            console.log('Received items from Firebase:', items); // Untuk debugging
             window.menuItems = items;
             renderMenu();
             renderMenuList();
@@ -615,13 +608,6 @@
             window.transactionHistory = history;
             renderHistory();
         });
-    
-        // 10. Auto refresh dapur orders
-        setInterval(() => {
-            if (document.getElementById('dapur-page').style.display === 'block') {
-                renderDapurOrders();
-            }
-        }, 30000);
     </script>
 </body>
 </html>
