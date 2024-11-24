@@ -9,7 +9,6 @@ import {
     remove 
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
-// Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyDglb9lO6b7mMnDzOwE1i9hWGUNpwPrcKs",
     authDomain: "kawan-lama-542e6.firebaseapp.com",
@@ -30,7 +29,6 @@ const menuRef = ref(db, 'menu');
 const ordersRef = ref(db, 'orders');
 const historyRef = ref(db, 'history');
 
-// Menu Functions
 export function saveMenu(menuItem) {
     return push(menuRef, menuItem);
 }
@@ -56,12 +54,8 @@ export function listenToMenu(callback) {
     });
 }
 
-// Order Functions
 export function saveOrder(order) {
-    return push(ordersRef, {
-        ...order,
-        timestamp: Date.now()
-    });
+    return push(ordersRef, order);
 }
 
 export function updateOrderStatus(id, status) {
@@ -69,23 +63,8 @@ export function updateOrderStatus(id, status) {
     return update(orderRef, { status });
 }
 
-export function listenToOrders(callback) {
-    onValue(ordersRef, (snapshot) => {
-        const data = snapshot.val();
-        const ordersArray = data ? Object.entries(data).map(([id, value]) => ({
-            id,
-            ...value
-        })) : [];
-        callback(ordersArray);
-    });
-}
-
-// History Functions
 export function saveTransaction(transaction) {
-    return push(historyRef, {
-        ...transaction,
-        timestamp: Date.now()
-    });
+    return push(historyRef, transaction);
 }
 
 export function listenToHistory(callback) {
@@ -96,5 +75,16 @@ export function listenToHistory(callback) {
             ...value
         })) : [];
         callback(historyArray);
+    });
+}
+
+export function listenToOrders(callback) {
+    onValue(ordersRef, (snapshot) => {
+        const data = snapshot.val();
+        const ordersArray = data ? Object.entries(data).map(([id, value]) => ({
+            id,
+            ...value
+        })) : [];
+        callback(ordersArray);
     });
 }
