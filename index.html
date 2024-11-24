@@ -282,6 +282,7 @@
     </div>
 
     <script type="module">
+    import * as FirebaseDB from './firebase.js';
         // Import the functions you need from the SDKs you need
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -305,6 +306,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
+         window.FirebaseDB = FirebaseDB; // Agar bisa diakses dari fungsi onclick
       </script>
       
     <script>
@@ -359,10 +361,11 @@
                 harga: parseInt(harga),
                 status: 'active'
             };
-
+            
             menuItems.push(newMenu);
             renderMenuList();
             renderMenu();
+            FirebaseDB.saveMenu(newMenu);
         }
 
         function editMenu(id) {
@@ -488,7 +491,14 @@
             }
 
             const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
-
+            const order = {
+                orderNumber: `A${String(kitchenOrders.length + 1).padStart(3, '0')}`,
+                status: 'new',
+                items: cart,
+                total: total,
+                paymentMethod: selectedPayment,
+                time: new Date().toISOString()
+            };
             // Add to transaction history
             transactionHistory.push({
                 date: new Date().toLocaleString(),
@@ -507,6 +517,14 @@
                     name: item.nama,
                     quantity: item.quantity
                 }))
+                FirebaseDB.saveOrder(order);
+                FirebaseDB.saveTransaction({
+                    date: new Date().toISOString(),
+                    items: [...cart],
+                    total: total,
+                    paymentMethod: selectedPayment
+                });
+
             });
 
             alert(`Pembayaran ${selectedPayment.toUpperCase()} berhasil!\nTotal: Rp ${total.toLocaleString()}`);
@@ -580,6 +598,21 @@
 
         // Initialize
         renderMenu();
+                FirebaseDB.listenToMenu((menuItems) => {
+            window.menuItems = menuItems;
+            renderMenu();
+            renderMenuList();
+        });
+        
+        FirebaseDB.listenToOrders((orders) => {
+            window.kitchenOrders = orders;
+            renderDapurOrders();
+        });
+        
+        FirebaseDB.listenToHistory((history) => {
+            window.transactionHistory = history;
+            renderHistory();
+        });
         
         // Auto refresh dapur orders
         setInterval(() => {
