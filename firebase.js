@@ -46,10 +46,14 @@ export function deleteMenuItem(id) {
 export function listenToMenu(callback) {
     onValue(menuRef, (snapshot) => {
         const data = snapshot.val();
+        console.log('Raw Firebase data:', data); // Untuk debugging
+        
         const menuArray = data ? Object.entries(data).map(([id, value]) => ({
             id,
             ...value
         })) : [];
+        
+        console.log('Processed menu array:', menuArray); // Untuk debugging
         callback(menuArray);
     });
 }
