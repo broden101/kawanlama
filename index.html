@@ -204,8 +204,20 @@
         .toggle-btn-inactive {
             background: #28a745;
         }
+                .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .action-btn:hover {
+            opacity: 0.9;
+        }
     </style>
-
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="header">
@@ -266,6 +278,13 @@
         <!-- History Page -->
         <div id="history-page" style="display: none;">
             <div class="table-container">
+                <div style="padding: 10px; display: flex; justify-content: flex-end;">
+                    <button class="action-btn" 
+                            style="background: #28a745; margin-right: 10px;" 
+                            onclick="exportToExcel()">
+                        Export ke Excel
+                    </button>
+                </div>
                 <table class="table">
                     <thead>
                         <tr>
@@ -279,7 +298,6 @@
                 </table>
             </div>
         </div>
-    </div>
 
     <script>
         // Global variables
@@ -589,6 +607,62 @@
         window.renderDapurOrders = renderDapurOrders;
         window.updateCart = updateCart;
     </script>
-
+    function exportToExcel() {
+        // Sheet 1: Riwayat detail
+        const detailData = transactionHistory.map(transaction => ({
+            'Tanggal': new Date(transaction.date).toLocaleString(),
+            'Items': transaction.items.map(item => 
+                `${item.nama} (x${item.quantity})`).join(', '),
+            'Total': `Rp ${transaction.total.toLocaleString()}`,
+            'Metode Pembayaran': transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'
+        }));
+    
+        // Sheet 2: Ringkasan
+        const summary = {
+            totalPenjualan: transactionHistory.reduce((sum, t) => sum + t.total, 0),
+            totalTransaksi: transactionHistory.length,
+            tunai: transactionHistory.filter(t => t.paymentMethod === 'cash').length,
+            qris: transactionHistory.filter(t => t.paymentMethod === 'qris').length
+        };
+    
+        const summaryData = [{
+            'Total Penjualan': `Rp ${summary.totalPenjualan.toLocaleString()}`,
+            'Jumlah Transaksi': summary.totalTransaksi,
+            'Pembayaran Tunai': summary.tunai,
+            'Pembayaran QRIS': summary.qris
+        }];
+    
+        // Buat workbook
+        const wb = XLSX.utils.book_new();
+        
+        // Sheet 1: Detail
+        const ws1 = XLSX.utils.json_to_sheet(detailData);
+        ws1['!cols'] = [
+            { wch: 20 }, // Tanggal
+            { wch: 40 }, // Items
+            { wch: 15 }, // Total
+            { wch: 15 }  // Metode Pembayaran
+        ];
+        XLSX.utils.book_append_sheet(wb, ws1, "Detail Penjualan");
+    
+        // Sheet 2: Ringkasan
+        const ws2 = XLSX.utils.json_to_sheet(summaryData);
+        ws2['!cols'] = [
+            { wch: 20 }, // Total Penjualan
+            { wch: 20 }, // Jumlah Transaksi
+            { wch: 20 }, // Pembayaran Tunai
+            { wch: 20 }  // Pembayaran QRIS
+        ];
+        XLSX.utils.book_append_sheet(wb, ws2, "Ringkasan");
+    
+        // Download file
+        const dateStr = new Date().toISOString().slice(0,10);
+        const fileName = `Laporan_Penjualan_${dateStr}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    }
+    
+    // Tambahkan ke window scope
+    window.exportToExcel = exportToExcel;
+        
 </body>
 </html>
