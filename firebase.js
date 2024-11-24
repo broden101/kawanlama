@@ -1,16 +1,15 @@
-// Import Firebase modules
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { 
-    getDatabase, 
-    ref, 
+    getDatabase,
+    ref,
     push,
     set,
     onValue,
     update,
     remove 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
-// Firebase configuration (gunakan config dari Firebase console Anda)
+// Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyDglb9lO6b7mMnDzOwE1i9hWGUNpwPrcKs",
     authDomain: "kawan-lama-542e6.firebaseapp.com",
@@ -26,9 +25,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Export fungsi-fungsi untuk digunakan di file HTML
+// Firebase References
+const menuRef = ref(db, 'menu');
+const ordersRef = ref(db, 'orders');
+const historyRef = ref(db, 'history');
+
+// Menu Functions
 export function saveMenu(menuItem) {
-    const menuRef = ref(db, 'menu');
     return push(menuRef, menuItem);
 }
 
@@ -43,7 +46,6 @@ export function deleteMenuItem(id) {
 }
 
 export function listenToMenu(callback) {
-    const menuRef = ref(db, 'menu');
     onValue(menuRef, (snapshot) => {
         const data = snapshot.val();
         const menuArray = data ? Object.entries(data).map(([id, value]) => ({
@@ -54,8 +56,8 @@ export function listenToMenu(callback) {
     });
 }
 
+// Order Functions
 export function saveOrder(order) {
-    const ordersRef = ref(db, 'orders');
     return push(ordersRef, {
         ...order,
         timestamp: Date.now()
@@ -67,10 +69,32 @@ export function updateOrderStatus(id, status) {
     return update(orderRef, { status });
 }
 
+export function listenToOrders(callback) {
+    onValue(ordersRef, (snapshot) => {
+        const data = snapshot.val();
+        const ordersArray = data ? Object.entries(data).map(([id, value]) => ({
+            id,
+            ...value
+        })) : [];
+        callback(ordersArray);
+    });
+}
+
+// History Functions
 export function saveTransaction(transaction) {
-    const historyRef = ref(db, 'history');
     return push(historyRef, {
         ...transaction,
         timestamp: Date.now()
+    });
+}
+
+export function listenToHistory(callback) {
+    onValue(historyRef, (snapshot) => {
+        const data = snapshot.val();
+        const historyArray = data ? Object.entries(data).map(([id, value]) => ({
+            id,
+            ...value
+        })) : [];
+        callback(historyArray);
     });
 }
