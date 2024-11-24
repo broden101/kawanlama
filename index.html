@@ -607,13 +607,14 @@
         window.renderHistory = renderHistory;
         window.renderDapurOrders = renderDapurOrders;
         window.updateCart = updateCart;
-    function exportToExcel() {
+        
+        function exportToExcel() {
         // Sheet 1: Riwayat detail
         const detailData = transactionHistory.map(transaction => ({
-            'Tanggal': new Date(transaction.date).toLocaleString(),
+            'Tanggal': new Date(transaction.date).toLocaleString('id-ID'),
             'Items': transaction.items.map(item => 
                 `${item.nama} (x${item.quantity})`).join(', '),
-            'Total': `Rp ${transaction.total.toLocaleString()}`,
+            'Total': `Rp ${transaction.total.toLocaleString('id-ID')}`,
             'Metode Pembayaran': transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'
         }));
     
@@ -626,7 +627,8 @@
         };
     
         const summaryData = [{
-            'Total Penjualan': `Rp ${summary.totalPenjualan.toLocaleString()}`,
+            'Ringkasan Penjualan': 'Nilai',
+            'Total Penjualan': `Rp ${summary.totalPenjualan.toLocaleString('id-ID')}`,
             'Jumlah Transaksi': summary.totalTransaksi,
             'Pembayaran Tunai': summary.tunai,
             'Pembayaran QRIS': summary.qris
@@ -638,7 +640,7 @@
         // Sheet 1: Detail
         const ws1 = XLSX.utils.json_to_sheet(detailData);
         ws1['!cols'] = [
-            { wch: 20 }, // Tanggal
+            { wch: 25 }, // Tanggal
             { wch: 40 }, // Items
             { wch: 15 }, // Total
             { wch: 15 }  // Metode Pembayaran
@@ -646,12 +648,10 @@
         XLSX.utils.book_append_sheet(wb, ws1, "Detail Penjualan");
     
         // Sheet 2: Ringkasan
-        const ws2 = XLSX.utils.json_to_sheet(summaryData);
+        const ws2 = XLSX.utils.json_to_sheet(summaryData, {skipHeader: true});
         ws2['!cols'] = [
-            { wch: 20 }, // Total Penjualan
-            { wch: 20 }, // Jumlah Transaksi
-            { wch: 20 }, // Pembayaran Tunai
-            { wch: 20 }  // Pembayaran QRIS
+            { wch: 20 }, // Label
+            { wch: 20 }, // Nilai
         ];
         XLSX.utils.book_append_sheet(wb, ws2, "Ringkasan");
     
@@ -660,6 +660,9 @@
         const fileName = `Laporan_Penjualan_${dateStr}.xlsx`;
         XLSX.writeFile(wb, fileName);
     }
+    
+    // Tambahkan ke window scope
+    window.exportToExcel = exportToExcel;
     </script>
     
     
