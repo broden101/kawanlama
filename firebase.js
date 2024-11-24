@@ -91,8 +91,4 @@ export function listenToOrders(callback) {
         })) : [];
         callback(ordersArray);
     });
-    
-export function deleteTransaction(transactionId) {
-    return db.ref(`transactions/${transactionId}`).remove(); // Hapus transaksi berdasarkan ID
-}
 }
