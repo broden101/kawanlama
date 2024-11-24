@@ -73,13 +73,7 @@ export function saveTransaction(transaction) {
 
 export function deleteMenuItem(id) {
     const menuItemRef = ref(db, `menu/${id}`);
-    return remove(menuItemRef)
-        .then(() => {
-            console.log('Item menu berhasil dihapus');
-        })
-        .catch((error) => {
-            console.error('Terjadi kesalahan saat menghapus item menu:', error);
-        });
+    return remove(menuItemRef);
 
 }
 
