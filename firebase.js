@@ -71,8 +71,16 @@ export function saveTransaction(transaction) {
     return push(historyRef, transaction);
 }
 
-export function deleteTransaction(transactionId) {
-    return db.ref(`transactions/${transactionId}`).remove();
+export function deleteMenuItem(id) {
+    const menuItemRef = ref(db, `menu/${id}`);
+    return remove(menuItemRef)
+        .then(() => {
+            console.log('Item menu berhasil dihapus');
+        })
+        .catch((error) => {
+            console.error('Terjadi kesalahan saat menghapus item menu:', error);
+        });
+
 }
 
 export function listenToHistory(callback) {
