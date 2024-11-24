@@ -278,10 +278,11 @@
         <!-- History Page -->
         <div id="history-page" style="display: none;">
             <div class="table-container">
-                <div style="padding: 10px; display: flex; justify-content: flex-end;">
-                    <button class="action-btn" 
-                            style="background: #28a745; margin-right: 10px;" 
-                            onclick="exportToExcel()">
+                <!-- Tambahkan div untuk tombol export -->
+                <div style="padding: 10px; display: flex; justify-content: flex-end; background-color: white; border-bottom: 1px solid #eee;">
+                    <button onclick="exportToExcel()" 
+                            class="add-menu-btn" 
+                            style="margin-bottom: 0px;">
                         Export ke Excel
                     </button>
                 </div>
@@ -606,7 +607,6 @@
         window.renderHistory = renderHistory;
         window.renderDapurOrders = renderDapurOrders;
         window.updateCart = updateCart;
-    </script>
     function exportToExcel() {
         // Sheet 1: Riwayat detail
         const detailData = transactionHistory.map(transaction => ({
@@ -660,6 +660,8 @@
         const fileName = `Laporan_Penjualan_${dateStr}.xlsx`;
         XLSX.writeFile(wb, fileName);
     }
+    </script>
+    
     
     // Tambahkan ke window scope
     window.exportToExcel = exportToExcel;
