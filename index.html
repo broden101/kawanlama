@@ -296,7 +296,18 @@
     window.selectPayment = selectPayment;
     window.checkout = checkout;
     window.updateOrderStatus = updateOrderStatus;
-</script>
+
+    // Kemudian jadikan global
+    window.FirebaseDB = FirebaseDB;
+    window.showPage = showPage;
+    window.tambahMenu = tambahMenu;
+    window.editMenu = editMenu;
+    window.toggleStatus = toggleStatus;
+    window.addToCart = addToCart;
+    window.removeFromCart = removeFromCart;
+    window.selectPayment = selectPayment;
+    window.checkout = checkout;
+    window.updateOrderStatus = updateOrderStatus;
 
 <script>
     // Data Structure
@@ -483,6 +494,7 @@
             }
 
             const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
+            
             const order = {
                 orderNumber: `A${String(kitchenOrders.length + 1).padStart(3, '0')}`,
                 status: 'new',
