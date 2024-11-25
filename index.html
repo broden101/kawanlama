@@ -237,6 +237,10 @@
             <div class="menu-container" id="menu-container"></div>
             <div class="cart">
                 <h2>Pesanan</h2>
+                <div>
+                    <label for="customer-name" style="font-weight: bold;">Nama Konsumen:</label>
+                    <input type="text" id="customer-name" placeholder="Masukkan nama konsumen" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
                 <div id="cart-items"></div>
                 <div style="font-size: 1.2em; font-weight: bold; margin: 20px 0; text-align: right;">
                     Total: Rp <span id="total">0</span>
@@ -246,7 +250,7 @@
                     <button class="payment-btn" id="qris-btn" onclick="selectPayment('qris')">QRIS</button>
                 </div>
                 <button class="btn btn-complete" onclick="checkout()">Bayar</button>
-            </div>
+            </div>            
         </div>
 
         <!-- Dapur Page -->
@@ -429,11 +433,18 @@
                 alert('Keranjang masih kosong!');
                 return;
             }
-    
+
+            const customerName = document.getElementById('customer-name').value.trim();
+            if (!customerName) {
+                alert('Silakan masukkan nama konsumen!');
+                return;
+            }
+
             const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
-            
+
             const order = {
                 orderNumber: `A${String(kitchenOrders.length + 1).padStart(3, '0')}`,
+                customerName: customerName,
                 status: 'new',
                 time: new Date().toISOString(),
                 items: cart.map(item => ({
@@ -443,10 +454,11 @@
                 total: total,
                 paymentMethod: selectedPayment
             };
-    
+
             FirebaseDB.saveOrder(order)
                 .then(() => FirebaseDB.saveTransaction({
                     date: new Date().toISOString(),
+                    customerName: customerName,
                     items: [...cart],
                     total: total,
                     paymentMethod: selectedPayment
@@ -454,12 +466,14 @@
                 .then(() => {
                     alert(`Pembayaran ${selectedPayment.toUpperCase()} berhasil!\nTotal: Rp ${total.toLocaleString()}`);
                     cart = [];
+                    document.getElementById('customer-name').value = ''; // Reset nama konsumen
                     updateCart();
                 })
                 .catch(error => {
                     alert('Error: ' + error.message);
                 });
         }
+
     
         function updateOrderStatus(orderId, newStatus) {
             FirebaseDB.updateOrderStatus(orderId, newStatus);
