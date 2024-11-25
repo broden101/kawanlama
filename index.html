@@ -234,6 +234,13 @@
 
         <!-- Kasir Page -->
         <div id="kasir-page">
+            <div style="margin-bottom: 10px; text-align: right;">
+                <select id="category-filter" onchange="filterMenu()" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="all">Semua</option>
+                    <option value="makanan">Makanan</option>
+                    <option value="minuman">Minuman</option>
+                </select>
+            </div>
             <div class="menu-container" id="menu-container"></div>
             <div class="cart">
                 <h2>Pesanan</h2>
@@ -308,6 +315,26 @@
         </div>
 
     <script>
+        function filterMenu() {
+            console.log("menuItems:", menuItems); // Debugging untuk memastikan data menu
+            const filter = document.getElementById('category-filter').value; // Mendapatkan nilai filter
+            const container = document.getElementById('menu-container');
+
+            const filteredMenus = filter === 'all' 
+                ? menuItems // Jika "all", tampilkan semua menu
+                : menuItems.filter(item => item.kategori === filter); // Filter berdasarkan kategori
+
+            console.log("filteredMenus:", filteredMenus); // Debugging untuk memastikan filter berjalan
+
+            container.innerHTML = filteredMenus.map(item => `
+                <div class="menu-item" onclick="addToCart(${item.id})">
+                    <img src="https://via.placeholder.com/200x150" alt="${item.nama}">
+                    <h3>${item.nama}</h3>
+                    <p>Rp ${item.harga.toLocaleString()}</p>
+                </div>
+            `).join('');
+        }
+
         // Global variables
         var menuItems = [
             { id: 1, nama: 'Kopi Malaysia', kategori: 'minuman', harga: 18000, status: 'active' },
@@ -337,9 +364,13 @@
         }
     
         function addToCart(id) {
-            const item = menuItems.find(item => item.id === id);
-            if (!item) return;
-            
+            console.log("Adding to cart:", id); // Debugging untuk memastikan klik berhasil
+            const item = menuItems.find(item => item.id === id); // Cari item berdasarkan id
+            if (!item) {
+                console.error("Item not found:", id); // Debugging jika item tidak ditemukan
+                return;
+            }
+
             const existingItem = cart.find(cartItem => cartItem.id === id);
             if (existingItem) {
                 existingItem.quantity++;
@@ -347,8 +378,9 @@
                 cart.push({ ...item, quantity: 1 });
             }
             
-            updateCart();
-        }
+            updateCart(); // Perbarui tampilan keranjang
+}
+
     
         function removeFromCart(id) {
             const index = cart.findIndex(item => item.id === id);
