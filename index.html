@@ -526,22 +526,24 @@
         }
     
         function renderHistory() {
-            const container = document.getElementById('history-list');
-            container.innerHTML = transactionHistory.map(transaction => `
-                <tr>
-                    <td>${new Date(transaction.date).toLocaleString()}</td>
-                    <td>${transaction.items.map(item => 
-                        `${item.nama} (x${item.quantity})`).join(', ')}
-                    </td>
-                    <td>Rp ${transaction.total.toLocaleString()}</td>
-                    <td>
-                        <span class="status-badge" 
-                            style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
-                            ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
-                        </span>
-                    </td>
-                </tr>
-            `).join('');
+        const container = document.getElementById('history-list');
+        container.innerHTML = transactionHistory.map(transaction => `
+            <tr>
+                <td>${new Date(transaction.date).toLocaleString()}</td>
+                <td>
+                    ${transaction.items.map(item => `
+                        ${item.name} (x${item.quantity}) Rp ${(item.price || 0).toLocaleString()}
+                    `).join('<br>')} <!-- Menambahkan enter antar item -->
+                </td>
+                <td>Rp ${transaction.total.toLocaleString()}</td>
+                <td>
+                    <span class="status-badge" 
+                        style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
+                        ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
         }
     
         function renderDapurOrders() {
