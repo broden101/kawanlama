@@ -262,6 +262,9 @@
                 <button class="filter-btn" onclick="filterMenu('makanan')">Makanan</button>
                 <button class="filter-btn" onclick="filterMenu('minuman')">Minuman</button>
                 <button class="filter-btn" onclick="filterMenu('toast')">Toast</button>
+                <button class="filter-btn" onclick="filterMenu('kopi')">Kopi</button>
+                <button class="filter-btn" onclick="filterMenu('hangat')">Hangat</button>
+                <button class="filter-btn" onclick="filterMenu('es')">Es</button>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 300px; gap: 20px;">
                 <div class="menu-container" id="menu-container"></div>
@@ -375,10 +378,33 @@
         function filterMenu(category) {
             const container = document.getElementById('menu-container');
             const activeMenus = menuItems.filter(item => item.status === 'active');
-            
-            const filteredMenus = category === 'all'
-                ? activeMenus
-                : activeMenus.filter(item => item.kategori === category);
+
+            let filteredMenus;
+            switch (category) {
+                case 'all':
+                    filteredMenus = activeMenus;
+                    break;
+                case 'makanan':
+                    filteredMenus = activeMenus.filter(item => item.kategori === 'makanan');
+                    break;
+                case 'minuman':
+                    filteredMenus = activeMenus.filter(item => item.kategori === 'minuman');
+                    break;
+                case 'toast':
+                    filteredMenus = activeMenus.filter(item => item.nama.toLowerCase().includes('toast'));
+                    break;
+                case 'kopi':
+                    filteredMenus = activeMenus.filter(item => item.nama.toLowerCase().includes('kopi'));
+                    break;
+                case 'hangat':
+                    filteredMenus = activeMenus.filter(item => item.nama.toLowerCase().includes('hangat'));
+                    break;
+                case 'es':
+                    filteredMenus = activeMenus.filter(item => item.nama.toLowerCase().includes('es'));
+                    break;
+                default:
+                    filteredMenus = activeMenus;
+            }
 
             container.innerHTML = filteredMenus.map(item => {
                 console.log(`Rendering menu: ${item.nama}, ID: ${item.id}`); // Debugging
