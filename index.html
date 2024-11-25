@@ -216,6 +216,29 @@
         .action-btn:hover {
             opacity: 0.9;
         }
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #ab342f;
+            background: white;
+            color: #ab342f;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active {
+            background: #ab342f;
+            color: white;
+        }
+
+        .filter-btn:hover {
+            opacity: 0.9;
+        }
+
+        #kasir-page {
+            display: block;
+        }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
 </head>
@@ -234,24 +257,33 @@
 
         <!-- Kasir Page -->
         <div id="kasir-page">
-            <div class="menu-container" id="menu-container"></div>
-            <div class="cart">
-                <h2>Pesanan</h2>
-                <div>
-                    <label for="customer-name" style="font-weight: bold;">Nama Konsumen:</label>
-                    <input type="text" id="customer-name" placeholder="Masukkan nama konsumen" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                <button class="filter-btn active" onclick="filterMenu('all')">Semua</button>
+                <button class="filter-btn" onclick="filterMenu('makanan')">Makanan</button>
+                <button class="filter-btn" onclick="filterMenu('minuman')">Minuman</button>
+                <button class="filter-btn" onclick="filterMenu('toast')">Toast</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 300px; gap: 20px;">
+                <div class="menu-container" id="menu-container"></div>
+                <div class="cart">
+                    <h2>Pesanan</h2>
+                    <div>
+                        <label for="customer-name" style="font-weight: bold;">Nama Konsumen:</label>
+                        <input type="text" id="customer-name" placeholder="Masukkan nama konsumen" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <div id="cart-items"></div>
+                    <div style="font-size: 1.2em; font-weight: bold; margin: 20px 0; text-align: right;">
+                        Total: Rp <span id="total">0</span>
+                    </div>
+                    <div class="payment-options">
+                        <button class="payment-btn selected" id="cash-btn" onclick="selectPayment('cash')">Tunai</button>
+                        <button class="payment-btn" id="qris-btn" onclick="selectPayment('qris')">QRIS</button>
+                    </div>
+                    <button class="btn btn-complete" onclick="checkout()">Bayar</button>
                 </div>
-                <div id="cart-items"></div>
-                <div style="font-size: 1.2em; font-weight: bold; margin: 20px 0; text-align: right;">
-                    Total: Rp <span id="total">0</span>
-                </div>
-                <div class="payment-options">
-                    <button class="payment-btn selected" id="cash-btn" onclick="selectPayment('cash')">Tunai</button>
-                    <button class="payment-btn" id="qris-btn" onclick="selectPayment('qris')">QRIS</button>
-                </div>
-                <button class="btn btn-complete" onclick="checkout()">Bayar</button>
-            </div>            
+            </div>
         </div>
+        
 
         <!-- Dapur Page -->
         <div id="dapur-page" style="display: none;">
@@ -308,11 +340,14 @@
         </div>
 
     <script>
-        // Global variables
-        var menuItems = [
-            { id: 1, nama: 'Kopi Malaysia', kategori: 'minuman', harga: 18000, status: 'active' },
-            { id: 2, nama: 'Nasi Goreng', kategori: 'makanan', harga: 25000, status: 'active' },
-            { id: 3, nama: 'Teh Tarik', kategori: 'minuman', harga: 15000, status: 'active' }
+    // Global variables
+                var menuItems = [
+                { id: 1, nama: 'Kopi Malaysia', kategori: 'minuman', harga: 18000, status: 'active' },
+                { id: 2, nama: 'Nasi Goreng', kategori: 'makanan', harga: 25000, status: 'active' },
+                { id: 3, nama: 'Teh Tarik', kategori: 'minuman', harga: 15000, status: 'active' },
+                { id: 4, nama: 'Kaya Toast', kategori: 'makanan', harga: 12000, status: 'active' },
+                { id: 5, nama: 'Nanas Toast', kategori: 'makanan', harga: 10000, status: 'active' },
+                { id: 6, nama: 'Mie Goreng', kategori: 'makanan', harga: 20000, status: 'active' }
         ];
         var cart = [];
         var selectedPayment = 'cash';
@@ -335,11 +370,39 @@
             if (page === 'history') renderHistory();
             if (page === 'dapur') renderDapurOrders();
         }
-    
-        function addToCart(id) {
-            const item = menuItems.find(item => item.id === id);
-            if (!item) return;
+
+
+        function filterMenu(category) {
+            const container = document.getElementById('menu-container');
+            const activeMenus = menuItems.filter(item => item.status === 'active');
             
+            const filteredMenus = category === 'all'
+                ? activeMenus
+                : activeMenus.filter(item => item.kategori === category);
+
+            container.innerHTML = filteredMenus.map(item => {
+                console.log(`Rendering menu: ${item.nama}, ID: ${item.id}`); // Debugging
+                return `
+                    <div class="menu-item" onclick="addToCart('${item.id}')">
+                        <img src="https://via.placeholder.com/200x150" alt="${item.nama}">
+                        <h3>${item.nama}</h3>
+                        <p>Rp ${item.harga.toLocaleString()}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+            document.addEventListener('DOMContentLoaded', () => {
+                filterMenu('all');
+            });
+        
+        function addToCart(id) {
+            const item = menuItems.find(item => item.id === id); // Perhatikan tipe ID
+            if (!item) {
+                console.error(`Item tidak ditemukan untuk ID: ${id}`);
+                return;
+            }
+            
+            console.log(`Item ditemukan:`, item); // Debugging
             const existingItem = cart.find(cartItem => cartItem.id === id);
             if (existingItem) {
                 existingItem.quantity++;
@@ -349,20 +412,35 @@
             
             updateCart();
         }
-    
+            window.addToCart = addToCart;
+           
         function removeFromCart(id) {
             const index = cart.findIndex(item => item.id === id);
             if (index !== -1) {
                 if (cart[index].quantity > 1) cart[index].quantity--;
                 else cart.splice(index, 1);
-                updateCart();
+                updateCart();   
             }
         }
-    
         function selectPayment(method) {
             selectedPayment = method;
             document.getElementById('cash-btn').classList.toggle('selected', method === 'cash');
             document.getElementById('qris-btn').classList.toggle('selected', method === 'qris');
+        }
+        function updateCart() {
+            const cartContainer = document.getElementById('cart-items');
+            cartContainer.innerHTML = cart.map(item => `
+                <div class="cart-item">
+                    <span>${item.nama} x ${item.quantity}</span>
+                    <span>
+                        Rp ${(item.harga * item.quantity).toLocaleString()}
+                        <button onclick="removeFromCart(${item.id})" style="padding: 2px 8px; margin-left: 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">-</button>
+                    </span>
+                </div>
+            `).join('');
+
+            const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
+            document.getElementById('total').textContent = total.toLocaleString();
         }
     
         function tambahMenu() {
