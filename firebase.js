@@ -1,107 +1,124 @@
-// Import Firebase Modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import {
+import { 
     getDatabase,
     ref,
     push,
     set,
     onValue,
     update,
-    remove
+    remove 
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
-// Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyDglb9lO6b7mMnDzOwE1i9hWGUNpwPrcKs",
     authDomain: "kawan-lama-542e6.firebaseapp.com",
     databaseURL: "https://kawan-lama-542e6-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "kawan-lama-542e6",
-    storageBucket: "kawan-lama-542e6.appspot.com",
+    storageBucket: "kawan-lama-542e6.firebasestorage.app",
     messagingSenderId: "1013787942051",
     appId: "1:1013787942051:web:fa198540c5a610aa577316",
     measurementId: "G-MPX5RR24J5"
 };
 
-// Initialize Firebase App and Database
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Firebase Database References
-const menuRef = ref(db, 'menu');
-const ordersRef = ref(db, 'orders');
-const historyRef = ref(db, 'history');
+// Firebase References
+const menuRef = ref(db, "menu");
+const ordersRef = ref(db, "orders");
+const historyRef = ref(db, "history");
 
-// Function to Save Menu Item
-export function saveMenu(menuItem) {
-    return push(menuRef, menuItem);
+function snapshotToArray(snapshot) {
+    const data = snapshot.val();
+    return data
+        ? Object.entries(data).map(([id, value]) => ({ id, ...value }))
+        : [];
 }
 
-// Function to Update a Menu Item
+export function saveMenu(menuItem) {
+    if (!menuItem.nama || !menuItem.kategori || !menuItem.harga) {
+        throw new Error("Menu harus memiliki nama, kategori, dan harga.");
+    }
+    return push(menuRef, menuItem)
+        .then(() => console.log("Menu berhasil disimpan:", menuItem))
+        .catch((error) => console.error("Error menyimpan menu:", error.message));
+}
+
 export function updateMenuItem(id, updates) {
     const menuItemRef = ref(db, `menu/${id}`);
-    return update(menuItemRef, updates);
+    return update(menuItemRef, updates)
+        .then(() => console.log("Menu berhasil diperbarui:", updates))
+        .catch((error) => console.error("Error memperbarui menu:", error.message));
 }
 
-// Function to Delete a Menu Item
 export function deleteMenuItem(id) {
     const menuItemRef = ref(db, `menu/${id}`);
-    return remove(menuItemRef);
+    return remove(menuItemRef)
+        .then(() => console.log("Menu berhasil dihapus:", id))
+        .catch((error) => console.error("Error menghapus menu:", error.message));
 }
 
-// Listener to Retrieve and Watch Menu Items
 export function listenToMenu(callback) {
-    onValue(menuRef, (snapshot) => {
-        const data = snapshot.val();
-        const menuArray = data
-            ? Object.entries(data).map(([id, value]) => ({
-                id,
-                ...value
-            }))
-            : [];
-        callback(menuArray);
-    });
+    onValue(menuRef, (snapshot) => callback(snapshotToArray(snapshot)));
 }
 
-// Function to Save an Order
 export function saveOrder(order) {
-    return push(ordersRef, order);
+    if (!order.customerName || !order.items || !Array.isArray(order.items)) {
+        throw new Error("Order harus memiliki nama pelanggan dan items.");
+    }
+    return push(ordersRef, order)
+        .then(() => console.log("Order berhasil disimpan:", order))
+        .catch((error) => console.error("Error menyimpan order:", error.message));
 }
 
-// Function to Update Order Status
 export function updateOrderStatus(id, status) {
     const orderRef = ref(db, `orders/${id}`);
-    return update(orderRef, { status });
+    return update(orderRef, { status })
+        .then(() => console.log("Order status berhasil diperbarui:", status))
+        .catch((error) => console.error("Error memperbarui status order:", error.message));
 }
 
-// Listener to Retrieve and Watch Orders
-export function listenToOrders(callback) {
+export function listenToOrders(callback, statusFilter = null) {
     onValue(ordersRef, (snapshot) => {
-        const data = snapshot.val();
-        const ordersArray = data
-            ? Object.entries(data).map(([id, value]) => ({
-                id,
-                ...value
-            }))
-            : [];
-        callback(ordersArray);
+        const ordersArray = snapshotToArray(snapshot);
+        const filteredOrders = statusFilter
+            ? ordersArray.filter(order => order.status === statusFilter)
+            : ordersArray;
+        callback(filteredOrders);
     });
 }
 
-// Function to Save a Transaction
 export function saveTransaction(transaction) {
-    return push(historyRef, transaction);
+    if (!transaction.items || !Array.isArray(transaction.items)) {
+        throw new Error("Transaction harus memiliki items.");
+    }
+
+    // Pastikan setiap item memiliki nama dan harga
+    transaction.items = transaction.items.map(item => ({
+        name: item.nama || "Item Tidak Diketahui",
+        quantity: item.quantity || 1,
+        price: item.harga || 0
+    }));
+
+    return push(historyRef, transaction)
+        .then(() => console.log("Transaction berhasil disimpan:", transaction))
+        .catch((error) => console.error("Error menyimpan transaksi:", error.message));
 }
 
-// Listener to Retrieve and Watch Transaction History
+
 export function listenToHistory(callback) {
     onValue(historyRef, (snapshot) => {
         const data = snapshot.val();
+        console.log("Raw data from Firebase (history):", data); // Debugging log
         const historyArray = data
             ? Object.entries(data).map(([id, value]) => ({
-                id,
-                ...value
-            }))
+                  id,
+                  ...value
+              }))
             : [];
+        console.log("Processed history array:", historyArray); // Debugging log
         callback(historyArray);
     });
 }
+
