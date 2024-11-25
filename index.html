@@ -361,7 +361,6 @@
                     return item.kategori === category;
                 });
 
-            // Fixed menu item rendering with correct onclick handler
             container.innerHTML = filteredMenus.map(item => `
                 <div class="menu-item" onclick="addToCart(${item.id})">
                     <img src="https://via.placeholder.com/200x150" alt="${item.nama}">
@@ -370,6 +369,7 @@
                 </div>
             `).join('');
         }
+
         // Global variables
         var menuItems = [
         { id: 1, nama: 'Kopi Malaysia', kategori: 'minuman', harga: 18000, status: 'active' },
@@ -567,8 +567,8 @@
                     <p>Rp ${item.harga.toLocaleString()}</p>
                 </div>
             `).join('');
-}
-    
+        }
+
         function renderMenuList() {
             const container = document.getElementById('menu-list');
             container.innerHTML = menuItems.map(item => `
@@ -665,14 +665,15 @@
                     <span>${item.nama} x ${item.quantity}</span>
                     <span>
                         Rp ${(item.harga * item.quantity).toLocaleString()}
-                        <button onclick="removeFromCart('${item.id}')">-</button>
+                        <button onclick="removeFromCart(${item.id})">-</button>
                     </span>
                 </div>
             `).join('');
-    
+
             const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
             document.getElementById('total').textContent = total.toLocaleString();
         }
+
     
         // Initialize
         renderMenu();
