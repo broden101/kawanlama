@@ -599,63 +599,46 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-    // Set default range tanggal ke hari ini
-    const today = new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
+    // Set tanggal default ke hari ini
+    const today = new Date().toISOString().slice(0, 10); // Format YYYY-MM-DD
     document.getElementById('start-date').value = today;
     document.getElementById('end-date').value = today;
 
-    // Jalankan filter setelah data `transactionHistory` siap
-    if (transactionHistory.length > 0) {
-        filterHistoryByRange();
-    } else {
-        // Tunggu hingga data `transactionHistory` siap
-        waitForTransactionHistory();
-    }
+    // Jalankan filter otomatis untuk menampilkan data hari ini
+    filterHistoryByRange();
 });
 
-function waitForTransactionHistory() {
-    // Tunggu data `transactionHistory` tersedia
-    const interval = setInterval(() => {
-        if (transactionHistory.length > 0) {
-            clearInterval(interval); // Hentikan interval jika data sudah tersedia
-            filterHistoryByRange(); // Jalankan filter otomatis
-        }
-    }, 100); // Periksa setiap 100ms
-}
-
 function filterHistoryByRange() {
-    const startDateInput = document.getElementById('start-date').value;
-    const endDateInput = document.getElementById('end-date').value;
+    const startDate = new Date(document.getElementById('start-date').value);
+    const endDate = new Date(document.getElementById('end-date').value);
+    const container = document.getElementById('history-list');
 
     // Validasi input tanggal
-    if (!startDateInput || !endDateInput) {
+    if (!startDate || !endDate || isNaN(startDate) || isNaN(endDate)) {
         alert('Silakan pilih rentang tanggal yang valid!');
         return;
     }
 
-    // Konversi input tanggal menjadi objek Date
-    const startDate = new Date(startDateInput);
-    const endDate = new Date(endDateInput);
-    endDate.setHours(23, 59, 59); // Pastikan mencakup seluruh hari terakhir
+    // Pastikan endDate mencakup seluruh hari terakhir (23:59:59)
+    endDate.setHours(23, 59, 59);
 
-    // Filter data berdasarkan rentang tanggal
+    // Filter transaksi berdasarkan rentang tanggal
     const filteredHistory = transactionHistory.filter(transaction => {
         const transactionDate = new Date(transaction.date);
         return transactionDate >= startDate && transactionDate <= endDate;
     });
 
-    // Render data yang sudah difilter
-    const container = document.getElementById('history-list');
+    // Render transaksi yang sesuai rentang tanggal
     container.innerHTML = filteredHistory.map(transaction => `
         <tr>
-            <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString()}</td>
+            <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString('id-ID')}</td>
             <td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>
             ${transaction.items.map((item, index) => `
-                <td>${item.name || 'Item Tidak Diketahui'}</td>
+                <td>${item.name || 'Tidak Diketahui'}</td>
                 <td>${item.quantity || 0}</td>
                 <td>Rp ${(item.price || 0).toLocaleString('id-ID')}</td>
                 ${index === 0 
-                    ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString('id-ID')}</td>
+                    ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>
                     <td rowspan="${transaction.items.length}">
                         <span class="status-badge" 
                               style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
@@ -665,13 +648,14 @@ function filterHistoryByRange() {
                     : ''
                 }
             </tr>
-            `).join('')}`
-    ).join('');
+            `).join('')}
+    `).join('');
 
-    // Hitung total pendapatan
+    // Hitung total pendapatan untuk rentang tanggal
     const totalIncome = filteredHistory.reduce((sum, transaction) => sum + transaction.total, 0);
-    document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
+    document.getElementById('total-income').textContent = `Rp ${totalIncome.toLocaleString('id-ID')}`;
 }
+
 
 
 
@@ -724,11 +708,11 @@ function filterHistoryByRange() {
             `).join('');
         }
     
-        function renderHistory() {
-            console.log("Transaction History:", transactionHistory); // Debugging log
-            const container = document.getElementById('history-list');
+        function renderHistory(callback) {
+        console.log("Transaction History:", transactionHistory); // Debugging log
+        const container = document.getElementById('history-list');
 
-            container.innerHTML = transactionHistory.map(transaction => `
+        container.innerHTML = transactionHistory.map(transaction => `
             <tr>
                 <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString()}</td>
                 <td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>
@@ -747,14 +731,20 @@ function filterHistoryByRange() {
                         : ''
                     }
             </tr>
-                    `).join('')}
-            `).join('');
-                // Hitung total pendapatan
-                const totalIncome = transactionHistory.reduce((sum, transaction) => sum + transaction.total, 0);
+                `).join('')}
+        `).join('');
 
-                // Tampilkan total pendapatan
-                document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
+        // Hitung total pendapatan
+        const totalIncome = transactionHistory.reduce((sum, transaction) => sum + transaction.total, 0);
+
+        // Tampilkan total pendapatan
+        document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
+
+        // Panggil callback setelah render selesai
+        if (callback && typeof callback === 'function') {
+            callback();
         }
+    }
 
 
         function renderDapurOrders() {
@@ -825,7 +815,9 @@ function filterHistoryByRange() {
     
         FirebaseDBModule.listenToHistory((history) => {
             window.transactionHistory = history;
-            renderHistory();
+            renderHistory(() => {
+                filterHistoryByRange();
+            });
         });
     
         // Make render functions globally accessible
