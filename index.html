@@ -806,32 +806,36 @@
         window.updateCart = updateCart;
         
         function exportToExcel() {
-    // Sheet 1: Detail Penjualan
-    const detailData = transactionHistory.map(transaction => {
-        return {
-            'Tanggal': new Date(transaction.date).toLocaleString('id-ID'), // Format tanggal lokal
-            'Nama': transaction.customerName || 'Tidak Diketahui',
-            'Pesanan': transaction.items.map(item => `${item.name || 'Tidak Diketahui'} (x${item.quantity})`).join('\n'), // Multi-barisan
-            'Quantity': transaction.items.reduce((sum, item) => sum + item.quantity, 0), // Total Quantity
-            'Total': `Rp ${transaction.total.toLocaleString('id-ID')}`,
-            'Metode Pembayaran': transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'
-        };
+    // Sheet 1: Detail Penjualan (dengan setiap pesanan pada baris terpisah)
+    const detailData = [];
+    transactionHistory.forEach(transaction => {
+        transaction.items.forEach((item, index) => {
+            detailData.push({
+                'Tanggal': index === 0 ? new Date(transaction.date).toLocaleString('id-ID') : '', // Hanya tampilkan tanggal di baris pertama
+                'Nama': index === 0 ? transaction.customerName || 'Tidak Diketahui' : '', // Hanya tampilkan nama di baris pertama
+                'Pesanan': `${item.name || 'Tidak Diketahui'} (x${item.quantity})`,
+                'Quantity': item.quantity,
+                'Harga': `Rp ${(item.price || 0).toLocaleString('id-ID')}`,
+                'Total': index === 0 ? `Rp ${transaction.total.toLocaleString('id-ID')}` : '', // Total hanya di baris pertama
+                'Metode Pembayaran': index === 0 ? (transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS') : '' // Hanya di baris pertama
+            });
+        });
     });
 
     // Ringkasan data
-    const summary = {
-        totalPenjualan: transactionHistory.reduce((sum, t) => sum + t.total, 0),
-        totalTransaksi: transactionHistory.length,
-        tunai: transactionHistory.filter(t => t.paymentMethod === 'cash').length,
-        qris: transactionHistory.filter(t => t.paymentMethod === 'qris').length
-    };
+    const totalTunai = transactionHistory
+        .filter(t => t.paymentMethod === 'cash')
+        .reduce((sum, t) => sum + t.total, 0);
+    const totalQRIS = transactionHistory
+        .filter(t => t.paymentMethod === 'qris')
+        .reduce((sum, t) => sum + t.total, 0);
 
     const summaryData = [{
         'Ringkasan': 'Nilai',
-        'Total Penjualan': `Rp ${summary.totalPenjualan.toLocaleString('id-ID')}`,
-        'Jumlah Transaksi': summary.totalTransaksi,
-        'Pembayaran Tunai': summary.tunai,
-        'Pembayaran QRIS': summary.qris
+        'Total Penjualan': `Rp ${transactionHistory.reduce((sum, t) => sum + t.total, 0).toLocaleString('id-ID')}`,
+        'Jumlah Transaksi': transactionHistory.length,
+        'Pembayaran Tunai': `Rp ${totalTunai.toLocaleString('id-ID')} (${transactionHistory.filter(t => t.paymentMethod === 'cash').length} transaksi)`,
+        'Pembayaran QRIS': `Rp ${totalQRIS.toLocaleString('id-ID')} (${transactionHistory.filter(t => t.paymentMethod === 'qris').length} transaksi)`
     }];
 
     // Buat workbook Excel
@@ -842,32 +846,19 @@
     ws1['!cols'] = [
         { wch: 20 }, // Tanggal
         { wch: 20 }, // Nama
-        { wch: 50 }, // Pesanan (Lebar cukup besar untuk multi-barisan)
+        { wch: 50 }, // Pesanan
         { wch: 10 }, // Quantity
+        { wch: 20 }, // Harga
         { wch: 20 }, // Total
         { wch: 20 }  // Metode Pembayaran
     ];
-
-    // Atur format sel untuk multi-barisan pada kolom "Pesanan"
-    Object.keys(ws1).forEach(cell => {
-        if (cell.startsWith('C')) { // Kolom "Pesanan" ada di kolom C
-            ws1[cell].s = {
-                alignment: {
-                    wrapText: true, // Aktifkan text wrapping
-                    vertical: 'center',
-                    horizontal: 'left'
-                }
-            };
-        }
-    });
-
     XLSX.utils.book_append_sheet(wb, ws1, "Detail Penjualan");
 
     // Sheet 2: Ringkasan Penjualan
     const ws2 = XLSX.utils.json_to_sheet(summaryData, { skipHeader: true });
     ws2['!cols'] = [
         { wch: 20 }, // Label
-        { wch: 20 }  // Nilai
+        { wch: 40 }  // Nilai
     ];
     XLSX.utils.book_append_sheet(wb, ws2, "Ringkasan Penjualan");
 
@@ -876,6 +867,7 @@
     const fileName = `Laporan_Penjualan_${dateStr}.xlsx`;
     XLSX.writeFile(wb, fileName);
 }
+
 
     // Tambahkan ke window scope
     window.exportToExcel = exportToExcel;
