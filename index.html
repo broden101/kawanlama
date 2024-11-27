@@ -316,6 +316,12 @@
 
         <!-- History Page -->
         <div id="history-page" style="display: none;">
+            <div id="history-filter-container" style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px;">
+                <label for="filter-date" style="font-weight: bold;">Filter Tanggal:</label>
+                <input type="date" id="filter-date" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;" onchange="filterHistoryByDate()">
+                <button onclick="resetHistoryFilter()" class="add-menu-btn" style="background: #dc3545;">Reset</button>
+            </div>
+            
             <div class="table-container">
                 <!-- Tambahkan div untuk tombol export -->
                 <div style="padding: 10px; display: flex; justify-content: flex-end; background-color: white; border-bottom: 1px solid #eee;">
@@ -339,6 +345,9 @@
                     </thead>
                     <tbody id="history-list"></tbody>
                 </table>
+            </div>
+            <div id="total-income-container" style="margin-top: 20px; padding: 10px; background: #f4f4f4; border-radius: 8px; text-align: right; font-size: 1.2em; font-weight: bold;">
+                Total Pendapatan: Rp <span id="total-income">0</span>
             </div>
         </div>
 
@@ -585,6 +594,48 @@
         function updateOrderStatus(orderId, newStatus) {
             FirebaseDB.updateOrderStatus(orderId, newStatus);
         }
+        function filterHistoryByDate() {
+        const selectedDate = document.getElementById('filter-date').value;
+        const container = document.getElementById('history-list');
+
+        if (!selectedDate) {
+            renderHistory();
+            return;
+        }
+
+        const filteredHistory = transactionHistory.filter(transaction => {
+                const transactionDate = new Date(transaction.date).toISOString().slice(0, 10); // Format DD-MM-YYYY
+                return transactionDate === selectedDate;
+            });
+
+            container.innerHTML = filteredHistory.map(transaction => `
+                <tr>
+                    <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString()}</td>
+                    <td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>
+                    ${transaction.items.map((item, index) => `
+                        <td>${item.name || 'Item Tidak Diketahui'}</td>
+                        <td>${item.quantity || 0}</td>
+                        <td>Rp ${(item.price || 0).toLocaleString()}</td>
+                        ${index === 0 
+                            ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>
+                            <td rowspan="${transaction.items.length}">
+                                <span class="status-badge" 
+                                    style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
+                                    ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
+                                </span>
+                            </td>` 
+                            : ''
+                        }
+                    </tr>
+                    `).join('')}
+            `).join('');
+        }
+
+    function resetHistoryFilter() {
+        document.getElementById('filter-date').value = ''; // Reset tanggal
+        renderHistory(); // Render ulang semua data
+    }
+
     </script>
     
     <script type="module">
@@ -637,28 +688,32 @@
             const container = document.getElementById('history-list');
 
             container.innerHTML = transactionHistory.map(transaction => `
-                <tr>
-                    <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString()}</td>
-                    <td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>
-                    ${transaction.items.map((item, index) => `
-                        <td>${item.name || 'Item Tidak Diketahui'}</td>
-                        <td>${item.quantity || 0}</td>
-                        <td>Rp ${(item.price || 0).toLocaleString()}</td>
-                        ${index === 0 
-                            ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>
-                            <td rowspan="${transaction.items.length}">
-                                <span class="status-badge" 
-                                        style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
-                                    ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
-                                </span>
-                            </td>` 
-                            : ''
-                        }
-                    </tr>
+            <tr>
+                <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString()}</td>
+                <td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>
+                ${transaction.items.map((item, index) => `
+                    <td>${item.name || 'Item Tidak Diketahui'}</td>
+                    <td>${item.quantity || 0}</td>
+                    <td>Rp ${(item.price || 0).toLocaleString()}</td>
+                    ${index === 0 
+                        ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>
+                        <td rowspan="${transaction.items.length}">
+                            <span class="status-badge" 
+                                style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
+                                ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
+                            </span>
+                        </td>` 
+                        : ''
+                    }
+            </tr>
                     `).join('')}
             `).join('');
-}
+                // Hitung total pendapatan
+                const totalIncome = transactionHistory.reduce((sum, transaction) => sum + transaction.total, 0);
 
+                // Tampilkan total pendapatan
+                document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
+        }
 
 
         function renderDapurOrders() {
