@@ -598,43 +598,54 @@
         const selectedDate = document.getElementById('filter-date').value;
         const container = document.getElementById('history-list');
 
+        // Validasi input tanggal
         if (!selectedDate) {
-            renderHistory();
+            renderHistory(); // Jika tidak ada tanggal yang dipilih, tampilkan semua data
             return;
         }
 
+        // Filter transaksi berdasarkan tanggal yang dipilih
         const filteredHistory = transactionHistory.filter(transaction => {
-                const transactionDate = new Date(transaction.date).toISOString().slice(0, 10); // Format DD-MM-YYYY
-                return transactionDate === selectedDate;
-            });
+            const transactionDate = new Date(transaction.date).toISOString().slice(0, 10); // Format YYYY-MM-DD
+            return transactionDate === selectedDate;
+        });
 
-            container.innerHTML = filteredHistory.map(transaction => `
-                <tr>
-                    <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString()}</td>
-                    <td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>
-                    ${transaction.items.map((item, index) => `
-                        <td>${item.name || 'Item Tidak Diketahui'}</td>
-                        <td>${item.quantity || 0}</td>
-                        <td>Rp ${(item.price || 0).toLocaleString()}</td>
-                        ${index === 0 
-                            ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>
-                            <td rowspan="${transaction.items.length}">
-                                <span class="status-badge" 
-                                    style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
-                                    ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
-                                </span>
-                            </td>` 
-                            : ''
-                        }
-                    </tr>
-                    `).join('')}
-            `).join('');
-        }
+        // Render data yang sudah difilter
+        container.innerHTML = filteredHistory.map(transaction => `
+            <tr>
+                <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString()}</td>
+                <td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>
+                ${transaction.items.map((item, index) => `
+                    <td>${item.name || 'Item Tidak Diketahui'}</td>
+                    <td>${item.quantity || 0}</td>
+                    <td>Rp ${(item.price || 0).toLocaleString()}</td>
+                    ${index === 0 
+                        ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>
+                        <td rowspan="${transaction.items.length}">
+                            <span class="status-badge" 
+                                style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
+                                ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
+                            </span>
+                        </td>` 
+                        : ''
+                    }
+                </tr>
+                `).join('')}
+        `).join('');
+
+    // Hitung total pendapatan berdasarkan data yang difilter
+    const totalIncome = filteredHistory.reduce((sum, transaction) => sum + transaction.total, 0);
+    document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
+}
+
 
     function resetHistoryFilter() {
         document.getElementById('filter-date').value = ''; // Reset tanggal
         renderHistory(); // Render ulang semua data
     }
+     // Hitung total pendapatan berdasarkan filter
+     const totalIncome = filteredHistory.reduce((sum, transaction) => sum + transaction.total, 0);
+    document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
 
     </script>
     
