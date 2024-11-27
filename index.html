@@ -316,10 +316,13 @@
 
         <!-- History Page -->
         <div id="history-page" style="display: none;">
-            <div id="history-filter-container" style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px;">
-                <label for="filter-date" style="font-weight: bold;">Filter Tanggal:</label>
-                <input type="date" id="filter-date" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;" onchange="filterHistoryByDate()">
-                <button onclick="resetHistoryFilter()" class="add-menu-btn" style="background: #dc3545;">Reset</button>
+            <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <label for="start-date">Range Tanggal:</label>
+                <input type="date" id="start-date" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                <label for="sampai">-</label>
+                <input type="date" id="end-date" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                <button onclick="filterHistoryByRange()">Filter</button>
+                <button onclick="resetHistoryFilter()">Reset</button>
             </div>
             
             <div class="table-container">
@@ -594,58 +597,85 @@
         function updateOrderStatus(orderId, newStatus) {
             FirebaseDB.updateOrderStatus(orderId, newStatus);
         }
-        function filterHistoryByDate() {
-        const selectedDate = document.getElementById('filter-date').value;
-        const container = document.getElementById('history-list');
 
-        // Validasi input tanggal
-        if (!selectedDate) {
-            renderHistory(); // Jika tidak ada tanggal yang dipilih, tampilkan semua data
-            return;
+        document.addEventListener('DOMContentLoaded', () => {
+    // Set default range tanggal ke hari ini
+    const today = new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
+    document.getElementById('start-date').value = today;
+    document.getElementById('end-date').value = today;
+
+    // Jalankan filter setelah data `transactionHistory` siap
+    if (transactionHistory.length > 0) {
+        filterHistoryByRange();
+    } else {
+        // Tunggu hingga data `transactionHistory` siap
+        waitForTransactionHistory();
+    }
+});
+
+function waitForTransactionHistory() {
+    // Tunggu data `transactionHistory` tersedia
+    const interval = setInterval(() => {
+        if (transactionHistory.length > 0) {
+            clearInterval(interval); // Hentikan interval jika data sudah tersedia
+            filterHistoryByRange(); // Jalankan filter otomatis
         }
+    }, 100); // Periksa setiap 100ms
+}
 
-        // Filter transaksi berdasarkan tanggal yang dipilih
-        const filteredHistory = transactionHistory.filter(transaction => {
-            const transactionDate = new Date(transaction.date).toISOString().slice(0, 10); // Format YYYY-MM-DD
-            return transactionDate === selectedDate;
-        });
+function filterHistoryByRange() {
+    const startDateInput = document.getElementById('start-date').value;
+    const endDateInput = document.getElementById('end-date').value;
 
-        // Render data yang sudah difilter
-        container.innerHTML = filteredHistory.map(transaction => `
-            <tr>
-                <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString()}</td>
-                <td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>
-                ${transaction.items.map((item, index) => `
-                    <td>${item.name || 'Item Tidak Diketahui'}</td>
-                    <td>${item.quantity || 0}</td>
-                    <td>Rp ${(item.price || 0).toLocaleString()}</td>
-                    ${index === 0 
-                        ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>
-                        <td rowspan="${transaction.items.length}">
-                            <span class="status-badge" 
-                                style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
-                                ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
-                            </span>
-                        </td>` 
-                        : ''
-                    }
-                </tr>
-                `).join('')}
-        `).join('');
+    // Validasi input tanggal
+    if (!startDateInput || !endDateInput) {
+        alert('Silakan pilih rentang tanggal yang valid!');
+        return;
+    }
 
-    // Hitung total pendapatan berdasarkan data yang difilter
+    // Konversi input tanggal menjadi objek Date
+    const startDate = new Date(startDateInput);
+    const endDate = new Date(endDateInput);
+    endDate.setHours(23, 59, 59); // Pastikan mencakup seluruh hari terakhir
+
+    // Filter data berdasarkan rentang tanggal
+    const filteredHistory = transactionHistory.filter(transaction => {
+        const transactionDate = new Date(transaction.date);
+        return transactionDate >= startDate && transactionDate <= endDate;
+    });
+
+    // Render data yang sudah difilter
+    const container = document.getElementById('history-list');
+    container.innerHTML = filteredHistory.map(transaction => `
+        <tr>
+            <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString()}</td>
+            <td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>
+            ${transaction.items.map((item, index) => `
+                <td>${item.name || 'Item Tidak Diketahui'}</td>
+                <td>${item.quantity || 0}</td>
+                <td>Rp ${(item.price || 0).toLocaleString('id-ID')}</td>
+                ${index === 0 
+                    ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString('id-ID')}</td>
+                    <td rowspan="${transaction.items.length}">
+                        <span class="status-badge" 
+                              style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
+                            ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
+                        </span>
+                    </td>` 
+                    : ''
+                }
+            </tr>
+            `).join('')}`
+    ).join('');
+
+    // Hitung total pendapatan
     const totalIncome = filteredHistory.reduce((sum, transaction) => sum + transaction.total, 0);
     document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
 }
 
 
-    function resetHistoryFilter() {
-        document.getElementById('filter-date').value = ''; // Reset tanggal
-        renderHistory(); // Render ulang semua data
-    }
-     // Hitung total pendapatan berdasarkan filter
-     const totalIncome = filteredHistory.reduce((sum, transaction) => sum + transaction.total, 0);
-    document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
+
+
 
     </script>
     
