@@ -609,57 +609,101 @@
 });
 
 function filterHistoryByRange() {
-    const startDate = new Date(document.getElementById('start-date').value);
-    const endDate = new Date(document.getElementById('end-date').value);
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
     const container = document.getElementById('history-list');
 
-    // Validasi input tanggal
-    if (!startDate || !endDate || isNaN(startDate) || isNaN(endDate)) {
-        alert('Silakan pilih rentang tanggal yang valid!');
+    // If no dates are selected, show all transactions
+    if (!startDateInput.value || !endDateInput.value) {
+        renderAllTransactions();
         return;
     }
 
-    // Pastikan endDate mencakup seluruh hari terakhir (23:59:59)
-    endDate.setHours(23, 59, 59);
+    // Create date objects
+    const startDateTime = new Date(startDateInput.value);
+    startDateTime.setHours(0, 0, 0, 0);
 
-    // Filter transaksi berdasarkan rentang tanggal
+    const endDateTime = new Date(endDateInput.value);
+    endDateTime.setHours(23, 59, 59, 999);
+
+    // Filter transactions
     const filteredHistory = transactionHistory.filter(transaction => {
         const transactionDate = new Date(transaction.date);
-        return transactionDate >= startDate && transactionDate <= endDate;
+        return transactionDate >= startDateTime && transactionDate <= endDateTime;
     });
 
-    // Render transaksi yang sesuai rentang tanggal
-    container.innerHTML = filteredHistory.map(transaction => `
-        <tr>
-            <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString('id-ID')}</td>
-            <td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>
-            ${transaction.items.map((item, index) => `
-                <td>${item.name || 'Tidak Diketahui'}</td>
+    renderTransactions(filteredHistory);
+}
+
+// Function to render all transactions without filtering
+function renderAllTransactions() {
+    renderTransactions(transactionHistory);
+}
+
+// Function to render transactions (either filtered or all)
+function renderTransactions(transactions) {
+    const container = document.getElementById('history-list');
+    
+    if (!transactions || transactions.length === 0) {
+        container.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Tidak ada transaksi</td></tr>';
+        document.getElementById('total-income').textContent = '0';
+        return;
+    }
+
+    container.innerHTML = transactions.map(transaction => {
+        if (!transaction.items || transaction.items.length === 0) {
+            return `
+                <tr>
+                    <td>${new Date(transaction.date).toLocaleString('id-ID')}</td>
+                    <td>${transaction.customerName || 'Tidak Diketahui'}</td>
+                    <td>-</td>
+                    <td>0</td>
+                    <td>Rp 0</td>
+                    <td>Rp ${transaction.total?.toLocaleString() || '0'}</td>
+                    <td>
+                        <span class="status-badge" 
+                              style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
+                            ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
+                        </span>
+                    </td>
+                </tr>`;
+        }
+
+        return transaction.items.map((item, index) => `
+            <tr>
+                ${index === 0 ? `<td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString('id-ID')}</td>` : ''}
+                ${index === 0 ? `<td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>` : ''}
+                <td>${item.nama || item.name || 'Tidak Diketahui'}</td>
                 <td>${item.quantity || 0}</td>
-                <td>Rp ${(item.price || 0).toLocaleString('id-ID')}</td>
-                ${index === 0 
-                    ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>
+                <td>Rp ${(item.harga || item.price || 0).toLocaleString('id-ID')}</td>
+                ${index === 0 ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>` : ''}
+                ${index === 0 ? `
                     <td rowspan="${transaction.items.length}">
                         <span class="status-badge" 
                               style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
                             ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
                         </span>
-                    </td>` 
-                    : ''
-                }
+                    </td>` : ''}
             </tr>
-            `).join('')}
-    `).join('');
+        `).join('');
+    }).join('');
 
-    // Hitung total pendapatan untuk rentang tanggal
-    const totalIncome = filteredHistory.reduce((sum, transaction) => sum + transaction.total, 0);
-    document.getElementById('total-income').textContent = `Rp ${totalIncome.toLocaleString('id-ID')}`;
+    // Update total income
+    const totalIncome = transactions.reduce((sum, transaction) => sum + (transaction.total || 0), 0);
+    document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
 }
 
+// Function to reset date filters
+function resetHistoryFilter() {
+    document.getElementById('start-date').value = '';
+    document.getElementById('end-date').value = '';
+    renderAllTransactions();
+}
 
-
-
-
+// Add event listener for when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    renderAllTransactions();
+});
 
     </script>
     
