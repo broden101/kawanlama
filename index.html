@@ -282,8 +282,8 @@
                 <div class="cart">
                     <h2>Pesanan</h2>
                     <div>
-                        <label for="customer-name" style="font-weight: bold;">Nama Konsumen:</label>
-                        <input type="text" id="customer-name" placeholder="Masukkan nama konsumen" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                        <label for="customer-name" style="font-weight: bold;">No Meja:</label>
+                        <input type="text" id="customer-name" placeholder="Masukkan nomor meja" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
                     <div id="cart-items"></div>
                     <div style="font-size: 1.2em; font-weight: bold; margin: 20px 0; text-align: right;">
@@ -584,7 +584,7 @@
 
     const customerName = document.getElementById('customer-name').value.trim();
     if (!customerName) {
-        alert('Silakan masukkan nama konsumen!');
+        alert('Silakan masukkan nomor meja!');
         return;
     }
 
