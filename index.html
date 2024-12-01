@@ -239,6 +239,15 @@
         #kasir-page {
             display: block;
         }
+        .action-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 0 2px;
+        }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
 </head>
@@ -665,33 +674,318 @@ function renderTransactions(transactions) {
     const container = document.getElementById('history-list');
     
     if (!transactions || transactions.length === 0) {
-        container.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Tidak ada transaksi</td></tr>';
+        container.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">Tidak ada transaksi</td></tr>';
         document.getElementById('total-income').textContent = '0';
         return;
     }
 
     container.innerHTML = transactions.map(transaction => {
-        return transaction.items.map((item, index) => `
+        const itemsHtml = transaction.items.map((item, index) => `
             <tr>
-                ${index === 0 ? `<td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString('id-ID')}</td>` : ''}
-                ${index === 0 ? `<td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>` : ''}
+                ${index === 0 ? `<td rowspan="${transaction.items.length + 1}">${new Date(transaction.date).toLocaleString('id-ID')}</td>` : ''}
+                ${index === 0 ? `<td rowspan="${transaction.items.length + 1}">${transaction.customerName || 'Tidak Diketahui'}</td>` : ''}
                 <td>${item.nama || item.name || 'Item Tidak Diketahui'}</td>
-                <td>${item.quantity || 0}</td>
+                <td>
+                    ${item.quantity || 0}
+                    <button onclick="modifyQuantity('${transaction.id}', ${index}, 'decrease')" class="action-btn" style="background: #dc3545; margin: 0 2px;">-</button>
+                    <button onclick="modifyQuantity('${transaction.id}', ${index}, 'increase')" class="action-btn" style="background: #28a745; margin: 0 2px;">+</button>
+                </td>
                 <td>Rp ${(item.harga || item.price || 0).toLocaleString('id-ID')}</td>
-                ${index === 0 ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>` : ''}
+                ${index === 0 ? `<td rowspan="${transaction.items.length + 1}">Rp ${transaction.total.toLocaleString()}</td>` : ''}
                 ${index === 0 ? `
-                    <td rowspan="${transaction.items.length}">
-                        <span class="status-badge" 
-                              style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
+                    <td rowspan="${transaction.items.length + 1}">
+                        <span class="status-badge" style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
                             ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
                         </span>
-                    </td>` : ''}
+                    </td>
+                ` : ''}
+                ${index === 0 ? `
+                    <td rowspan="${transaction.items.length + 1}">
+                        <button onclick="deleteTransaction('${transaction.id}')" class="action-btn" style="background: #dc3545;">Hapus</button>
+                    </td>
+                ` : ''}
             </tr>
         `).join('');
+
+        // Tambahkan baris untuk tombol "Tambah Item"
+        return itemsHtml + `
+            <tr>
+                <td colspan="3">
+                    <button onclick="showAddItemModal('${transaction.id}')" class="action-btn" style="background: #17a2b8; width: 100%;">
+                        + Tambah Item
+                    </button>
+                </td>
+            </tr>
+        `;
     }).join('');
 
     const totalIncome = transactions.reduce((sum, transaction) => sum + (transaction.total || 0), 0);
     document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
+}
+
+
+function addModalHTML() {
+    const modal = document.createElement('div');
+    modal.id = 'addItemModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Tambah Item Menu</h2>
+            </div>
+            <div class="menu-selection">
+                ${menuItems.map(item => {
+                    // Hanya tampilkan menu yang aktif
+                    if (item.status === 'active') {
+                        return `
+                            <div class="menu-option">
+                                <div class="menu-info">
+                                    <span class="menu-name">${item.nama}</span>
+                                    <span class="menu-price">Rp ${item.harga.toLocaleString()}</span>
+                                </div>
+                                <div class="menu-actions">
+                                    <input type="number" min="1" value="1" id="quantity-${item.id}" class="quantity-input">
+                                    <button onclick="addItemToTransaction('${window.currentTransactionId}', '${item.id}')" class="btn-tambah">
+                                        Tambah
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    return '';
+                }).join('')}
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeAddItemModal()" class="btn-tutup">Tutup</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Tambahkan style untuk modal
+    const style = document.createElement('style');
+    style.textContent = `
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .modal-header {
+            background: #ab342f;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px 8px 0 0;
+        }
+        .menu-selection {
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .menu-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .menu-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .menu-name {
+            font-weight: bold;
+        }
+        .menu-price {
+            color: #666;
+        }
+        .menu-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .quantity-input {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            text-align: right;
+        }
+        .btn-tambah {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-tutup {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function showAddItemModal(transactionId) {
+    window.currentTransactionId = transactionId;
+    const modal = document.getElementById('addItemModal');
+    if (!modal) {
+        addModalHTML();
+    }
+    document.getElementById('addItemModal').style.display = 'block';
+}
+
+function closeAddItemModal() {
+    document.getElementById('addItemModal').style.display = 'none';
+}
+
+async function addItemToTransaction(transactionId, menuItemId) {
+    try {
+        const transaction = transactionHistory.find(t => t.id === transactionId);
+        if (!transaction) {
+            throw new Error('Transaksi tidak ditemukan');
+        }
+
+        const menuItem = menuItems.find(item => item.id === menuItemId);
+        if (!menuItem) {
+            throw new Error('Item menu tidak ditemukan');
+        }
+
+        const quantity = parseInt(document.getElementById(`quantity-${menuItemId}`).value);
+        if (isNaN(quantity) || quantity < 1) {
+            throw new Error('Quantity tidak valid');
+        }
+
+        // Cek apakah item sudah ada di transaksi
+        const existingItemIndex = transaction.items.findIndex(item => 
+            (item.nama === menuItem.nama) || (item.name === menuItem.nama)
+        );
+
+        if (existingItemIndex !== -1) {
+            // Update quantity jika item sudah ada
+            transaction.items[existingItemIndex].quantity += quantity;
+        } else {
+            // Tambah item baru jika belum ada
+            transaction.items.push({
+                nama: menuItem.nama,
+                name: menuItem.nama,
+                quantity: quantity,
+                harga: menuItem.harga,
+                price: menuItem.harga
+            });
+        }
+
+        // Hitung ulang total
+        transaction.total = transaction.items.reduce((sum, item) => 
+            sum + ((item.harga || item.price) * item.quantity), 0
+        );
+
+        // Update di Firebase
+        await FirebaseDB.updateTransaction(transactionId, transaction);
+        
+        closeAddItemModal();
+        alert('Item berhasil ditambahkan!');
+        
+        // Render ulang transaksi
+        renderTransactions(transactionHistory);
+    } catch (error) {
+        console.error('Error adding item:', error);
+        alert('Gagal menambahkan item: ' + error.message);
+    }
+}
+
+// Jalankan saat halaman dimuat
+document.addEventListener('DOMContentLoaded', () => {
+    addModalHTML();
+});
+
+
+async function modifyQuantity(transactionId, itemIndex, action) {
+    try {
+        // Ambil data transaksi dari Firebase
+        const transaction = transactionHistory.find(t => t.id === transactionId);
+        if (!transaction) {
+            alert('Transaksi tidak ditemukan');
+            return;
+        }
+
+        const item = transaction.items[itemIndex];
+        if (!item) {
+            alert('Item tidak ditemukan');
+            return;
+        }
+
+        // Update quantity
+        if (action === 'increase') {
+            item.quantity++;
+        } else if (action === 'decrease') {
+            if (item.quantity <= 1) {
+                if (transaction.items.length <= 1) {
+                    if (confirm('Ini adalah item terakhir. Hapus transaksi?')) {
+                        await deleteTransaction(transactionId);
+                        return;
+                    }
+                    return;
+                }
+                if (confirm('Hapus item ini?')) {
+                    transaction.items.splice(itemIndex, 1);
+                }
+            } else {
+                item.quantity--;
+            }
+        }
+
+        // Hitung ulang total
+        transaction.total = transaction.items.reduce((sum, item) => 
+            sum + ((item.harga || item.price) * item.quantity), 0);
+
+        // Update di Firebase
+        await FirebaseDB.updateTransaction(transactionId, transaction);
+        
+        // Update UI
+        renderTransactions(transactionHistory);
+        
+        alert('Pesanan berhasil dimodifikasi!');
+    } catch (error) {
+        console.error('Error modifying quantity:', error);
+        alert('Gagal memodifikasi pesanan: ' + error.message);
+    }
+}
+// 3. Fungsi untuk menghapus transaksi
+async function deleteTransaction(transactionId) {
+    if (!confirm('Yakin ingin menghapus transaksi ini?')) {
+        return;
+    }
+
+    try {
+        await FirebaseDB.deleteTransaction(transactionId);
+        alert('Transaksi berhasil dihapus!');
+    } catch (error) {
+        console.error('Error deleting transaction:', error);
+        alert('Gagal menghapus transaksi: ' + error.message);
+    }
 }
 
 
