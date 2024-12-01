@@ -581,33 +581,30 @@
 
     const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
     
-    // Gunakan format ISO string untuk tanggal
-    const now = new Date();
-    const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString();
+    // Pastikan setiap item memiliki informasi lengkap
+    const items = cart.map(item => ({
+        nama: item.nama,         // Gunakan nama item
+        name: item.nama,         // Duplikasi untuk kompatibilitas
+        quantity: item.quantity,
+        harga: item.harga,      // Simpan harga per item
+        price: item.harga       // Duplikasi untuk kompatibilitas
+    }));
 
     const order = {
         orderNumber: `A${String(kitchenOrders.length + 1).padStart(3, '0')}`,
         customerName: customerName,
         status: 'new',
-        time: localISOTime,
-        items: cart.map(item => ({
-            name: item.nama,
-            quantity: item.quantity,
-            price: item.harga
-        })),
+        time: new Date().toISOString(),
+        items: items,
         total: total,
         paymentMethod: selectedPayment
     };
 
-    // Simpan transaksi dengan waktu lokal
+    // Simpan transaksi dengan detail item lengkap
     FirebaseDB.saveTransaction({
-        date: localISOTime,
+        date: new Date().toISOString(),
         customerName: customerName,
-        items: cart.map(item => ({
-            name: item.nama,
-            quantity: item.quantity,
-            price: item.harga
-        })),
+        items: items,
         total: total,
         paymentMethod: selectedPayment
     })
@@ -618,11 +615,10 @@
         updateCart();
     })
     .catch(error => {
+        console.error('Error saving transaction:', error);
         alert('Error: ' + error.message);
     });
 }
-
-    
         function updateOrderStatus(orderId, newStatus) {
             FirebaseDB.updateOrderStatus(orderId, newStatus);
         }
@@ -675,14 +671,13 @@ function renderTransactions(transactions) {
     }
 
     container.innerHTML = transactions.map(transaction => {
-        const transactionDate = new Date(transaction.date);
         return transaction.items.map((item, index) => `
             <tr>
-                ${index === 0 ? `<td rowspan="${transaction.items.length}">${transactionDate.toLocaleString('id-ID')}</td>` : ''}
+                ${index === 0 ? `<td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString('id-ID')}</td>` : ''}
                 ${index === 0 ? `<td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>` : ''}
-                <td>${item.name || 'Tidak Diketahui'}</td>
+                <td>${item.nama || item.name || 'Item Tidak Diketahui'}</td>
                 <td>${item.quantity || 0}</td>
-                <td>Rp ${(item.price || 0).toLocaleString('id-ID')}</td>
+                <td>Rp ${(item.harga || item.price || 0).toLocaleString('id-ID')}</td>
                 ${index === 0 ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>` : ''}
                 ${index === 0 ? `
                     <td rowspan="${transaction.items.length}">
@@ -698,6 +693,7 @@ function renderTransactions(transactions) {
     const totalIncome = transactions.reduce((sum, transaction) => sum + (transaction.total || 0), 0);
     document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
 }
+
 
 // Function to reset date filters
 function resetHistoryFilter() {
