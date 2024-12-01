@@ -257,7 +257,9 @@
 
         <!-- Kasir Page -->
         <div id="kasir-page">
-            <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="search-input" placeholder="Cari menu..." oninput="searchMenu()" 
+                       style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
                 <button class="filter-btn active" onclick="filterMenu('all')">Semua</button>
                 <button class="filter-btn" onclick="filterMenu('makanan')">Makanan</button>
                 <button class="filter-btn" onclick="filterMenu('minuman')">Minuman</button>
@@ -369,7 +371,25 @@
         var transactionHistory = [];
         var kitchenOrders = [];
         var FirebaseDB;
-    
+        
+        function searchMenu() {
+            const searchText = document.getElementById('search-input').value.trim().toLowerCase();
+            const container = document.getElementById('menu-container');
+
+            const filteredMenus = menuItems.filter(item => 
+                item.nama.toLowerCase().includes(searchText) && item.status === 'active'
+            );
+
+            container.innerHTML = filteredMenus.map(item => `
+                <div class="menu-item" onclick="addToCart('${item.id}')">
+                    <img src="https://via.placeholder.com/200x150" alt="${item.nama}">
+                    <h3>${item.nama}</h3>
+                    <p>Rp ${item.harga.toLocaleString()}</p>
+                </div>
+            `).join('');
+        }
+
+
         // Fungsi-fungsi yang dipanggil dari HTML
         function showPage(page) {
             document.getElementById('kasir-page').style.display = page === 'kasir' ? 'block' : 'none';
@@ -388,6 +408,9 @@
 
 
         function filterMenu(category) {
+            // Reset input pencarian
+            document.getElementById('search-input').value = '';
+            
             const container = document.getElementById('menu-container');
             const activeMenus = menuItems.filter(item => item.status === 'active');
 
@@ -418,20 +441,17 @@
                     filteredMenus = activeMenus;
             }
 
-            container.innerHTML = filteredMenus.map(item => {
-                console.log(`Rendering menu: ${item.nama}, ID: ${item.id}`); // Debugging
-                return `
-                    <div class="menu-item" onclick="addToCart('${item.id}')">
-                        <img src="https://via.placeholder.com/200x150" alt="${item.nama}">
-                        <h3>${item.nama}</h3>
-                        <p>Rp ${item.harga.toLocaleString()}</p>
-                    </div>
-                `;
-            }).join('');
-        }
-            document.addEventListener('DOMContentLoaded', () => {
-                filterMenu('all');
-            });
+            container.innerHTML = filteredMenus.map(item => `
+                <div class="menu-item" onclick="addToCart('${item.id}')">
+                    <img src="https://via.placeholder.com/200x150" alt="${item.nama}">
+                    <h3>${item.nama}</h3>
+                    <p>Rp ${item.harga.toLocaleString()}</p>
+                </div>
+            `).join('');
+                }
+                    document.addEventListener('DOMContentLoaded', () => {
+                        filterMenu('all');
+                    });
         
         function addToCart(id) {
             const item = menuItems.find(item => item.id === id); // Perhatikan tipe ID
@@ -548,50 +568,59 @@
         }
     
         function checkout() {
-            if (cart.length === 0) {
-                alert('Keranjang masih kosong!');
-                return;
-            }
+    if (cart.length === 0) {
+        alert('Keranjang masih kosong!');
+        return;
+    }
 
-            const customerName = document.getElementById('customer-name').value.trim();
-            if (!customerName) {
-                alert('Silakan masukkan nama konsumen!');
-                return;
-            }
+    const customerName = document.getElementById('customer-name').value.trim();
+    if (!customerName) {
+        alert('Silakan masukkan nama konsumen!');
+        return;
+    }
 
-            const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
+    const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
+    
+    // Gunakan format ISO string untuk tanggal
+    const now = new Date();
+    const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString();
 
-            const order = {
-                orderNumber: `A${String(kitchenOrders.length + 1).padStart(3, '0')}`,
-                customerName: customerName,
-                status: 'new',
-                time: new Date().toISOString(),
-                items: cart.map(item => ({
-                    name: item.nama,
-                    quantity: item.quantity
-                })),
-                total: total,
-                paymentMethod: selectedPayment
-            };
+    const order = {
+        orderNumber: `A${String(kitchenOrders.length + 1).padStart(3, '0')}`,
+        customerName: customerName,
+        status: 'new',
+        time: localISOTime,
+        items: cart.map(item => ({
+            name: item.nama,
+            quantity: item.quantity,
+            price: item.harga
+        })),
+        total: total,
+        paymentMethod: selectedPayment
+    };
 
-            FirebaseDB.saveOrder(order)
-                .then(() => FirebaseDB.saveTransaction({
-                    date: new Date().toISOString(),
-                    customerName: customerName,
-                    items: [...cart],
-                    total: total,
-                    paymentMethod: selectedPayment
-                }))
-                .then(() => {
-                    alert(`Pembayaran ${selectedPayment.toUpperCase()} berhasil!\nTotal: Rp ${total.toLocaleString()}`);
-                    cart = [];
-                    document.getElementById('customer-name').value = ''; // Reset nama konsumen
-                    updateCart();
-                })
-                .catch(error => {
-                    alert('Error: ' + error.message);
-                });
-        }
+    // Simpan transaksi dengan waktu lokal
+    FirebaseDB.saveTransaction({
+        date: localISOTime,
+        customerName: customerName,
+        items: cart.map(item => ({
+            name: item.nama,
+            quantity: item.quantity,
+            price: item.harga
+        })),
+        total: total,
+        paymentMethod: selectedPayment
+    })
+    .then(() => {
+        alert(`Pembayaran ${selectedPayment.toUpperCase()} berhasil!\nTotal: Rp ${total.toLocaleString()}`);
+        cart = [];
+        document.getElementById('customer-name').value = '';
+        updateCart();
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    });
+}
 
     
         function updateOrderStatus(orderId, newStatus) {
@@ -609,29 +638,24 @@
 });
 
 function filterHistoryByRange() {
-    const startDateInput = document.getElementById('start-date');
-    const endDateInput = document.getElementById('end-date');
-    const container = document.getElementById('history-list');
+    const startDateInput = document.getElementById('start-date').value;
+    const endDateInput = document.getElementById('end-date').value;
 
-    // If no dates are selected, show all transactions
-    if (!startDateInput.value || !endDateInput.value) {
-        renderAllTransactions();
-        return;
-    }
+    // Konversi input tanggal ke objek Date dengan zona waktu lokal
+    const startDateTime = new Date(startDateInput + 'T00:00:00');
+    const endDateTime = new Date(endDateInput + 'T23:59:59');
 
-    // Create date objects
-    const startDateTime = new Date(startDateInput.value);
-    startDateTime.setHours(0, 0, 0, 0);
+    console.log("Filtering dari:", startDateTime);
+    console.log("Sampai:", endDateTime);
 
-    const endDateTime = new Date(endDateInput.value);
-    endDateTime.setHours(23, 59, 59, 999);
-
-    // Filter transactions
     const filteredHistory = transactionHistory.filter(transaction => {
         const transactionDate = new Date(transaction.date);
+        console.log("Tanggal transaksi:", transactionDate);
+        
         return transactionDate >= startDateTime && transactionDate <= endDateTime;
     });
 
+    console.log("Hasil filter:", filteredHistory);
     renderTransactions(filteredHistory);
 }
 
@@ -651,31 +675,14 @@ function renderTransactions(transactions) {
     }
 
     container.innerHTML = transactions.map(transaction => {
-        if (!transaction.items || transaction.items.length === 0) {
-            return `
-                <tr>
-                    <td>${new Date(transaction.date).toLocaleString('id-ID')}</td>
-                    <td>${transaction.customerName || 'Tidak Diketahui'}</td>
-                    <td>-</td>
-                    <td>0</td>
-                    <td>Rp 0</td>
-                    <td>Rp ${transaction.total?.toLocaleString() || '0'}</td>
-                    <td>
-                        <span class="status-badge" 
-                              style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
-                            ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
-                        </span>
-                    </td>
-                </tr>`;
-        }
-
+        const transactionDate = new Date(transaction.date);
         return transaction.items.map((item, index) => `
             <tr>
-                ${index === 0 ? `<td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString('id-ID')}</td>` : ''}
+                ${index === 0 ? `<td rowspan="${transaction.items.length}">${transactionDate.toLocaleString('id-ID')}</td>` : ''}
                 ${index === 0 ? `<td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>` : ''}
-                <td>${item.nama || item.name || 'Tidak Diketahui'}</td>
+                <td>${item.name || 'Tidak Diketahui'}</td>
                 <td>${item.quantity || 0}</td>
-                <td>Rp ${(item.harga || item.price || 0).toLocaleString('id-ID')}</td>
+                <td>Rp ${(item.price || 0).toLocaleString('id-ID')}</td>
                 ${index === 0 ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>` : ''}
                 ${index === 0 ? `
                     <td rowspan="${transaction.items.length}">
@@ -688,7 +695,6 @@ function renderTransactions(transactions) {
         `).join('');
     }).join('');
 
-    // Update total income
     const totalIncome = transactions.reduce((sum, transaction) => sum + (transaction.total || 0), 0);
     document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
 }
@@ -859,10 +865,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
         FirebaseDBModule.listenToHistory((history) => {
             window.transactionHistory = history;
-            renderHistory(() => {
-                filterHistoryByRange();
-            });
-        });
+    console.log("Data history yang diterima:", history); // Untuk debugging
+    renderTransactions(history);
+});
     
         // Make render functions globally accessible
         window.renderMenu = renderMenu;
