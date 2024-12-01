@@ -266,27 +266,13 @@
                 <button class="filter-btn" onclick="filterMenu('hangat')">Hangat</button>
                 <button class="filter-btn" onclick="filterMenu('es')">Es</button>
             </div>
-            <!-- Tambahkan ini setelah div filter buttons dan sebelum div menu container -->
-                <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
-                    <input 
-                        type="text" 
-                        id="search-menu" 
-                        placeholder="Cari menu..." 
-                        style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex-grow: 1; max-width: 300px;"
-                        oninput="searchMenu(this.value)"
-                    >
-                </div>
             <div style="display: grid; grid-template-columns: 1fr 300px; gap: 20px;">
                 <div class="menu-container" id="menu-container"></div>
                 <div class="cart">
                     <h2>Pesanan</h2>
                     <div>
-                        <label for="table-number" style="font-weight: bold;">Nomor Meja:</label>
-                        <input type="number" 
-                               id="table-number" 
-                               min="1" 
-                               placeholder="Masukkan nomor meja" 
-                               style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                        <label for="customer-name" style="font-weight: bold;">Nama Konsumen:</label>
+                        <input type="text" id="customer-name" placeholder="Masukkan nama konsumen" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
                     <div id="cart-items"></div>
                     <div style="font-size: 1.2em; font-weight: bold; margin: 20px 0; text-align: right;">
@@ -369,7 +355,6 @@
         </div>
 
     <script>
-
     // Global variables
                 var menuItems = [
                 { id: 1, nama: 'Kopi Malaysia', kategori: 'minuman', harga: 18000, status: 'active' },
@@ -400,25 +385,8 @@
             if (page === 'history') renderHistory();
             if (page === 'dapur') renderDapurOrders();
         }
-        function searchMenu(query) { 
-            const container = document.getElementById('menu-container'); 
-            const activeMenus = menuItems.filter(item => item.status === 'active'); 
-             
-            // Filter menu berdasarkan query pencarian 
-            const searchResults = activeMenus.filter(item =>  
-                item.nama.toLowerCase().includes(query.toLowerCase()) || 
-                item.kategori.toLowerCase().includes(query.toLowerCase()) 
-            ); 
-             
-            // Render hasil pencarian 
-            container.innerHTML = searchResults.map(item => ` 
-                <div class="menu-item" onclick="addToCart('${item.id}')"> 
-                    <img src="https://via.placeholder.com/200x150" alt="${item.nama}"> 
-                    <h3>${item.nama}</h3> 
-                    <p>Rp ${item.harga.toLocaleString()}</p> 
-                </div> 
-            `).join(''); 
-        }
+
+
         function filterMenu(category) {
             const container = document.getElementById('menu-container');
             const activeMenus = menuItems.filter(item => item.status === 'active');
