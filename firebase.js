@@ -123,17 +123,14 @@ export function listenToHistory(callback) {
 export const FirebaseDB = {
     async updateTransaction(transactionId, updatedData) {
         try {
-            const transactionRef = ref(db, `history/${transactionId}`); // Path yang benar
-            console.log(`Mengupdate transaksi dengan ID: ${transactionId}`, updatedData);
+            const transactionRef = ref(db, `history/${transactionId}`);
             await update(transactionRef, updatedData);
-            console.log(`Transaksi ${transactionId} berhasil diperbarui.`);
         } catch (error) {
-            console.error(`Error mengupdate transaksi: ${error.message}`);
             throw new Error('Gagal mengupdate transaksi: ' + error.message);
         }
     },
 
-    async deleteTransaction(transactionId) {
+    async deleteTransaction(transactionId) { // Pastikan fungsi ini ada
         try {
             const transactionRef = ref(db, `history/${transactionId}`);
             console.log(`Menghapus transaksi dengan ID: ${transactionId}`);
@@ -145,3 +142,4 @@ export const FirebaseDB = {
         }
     },
 };
+
