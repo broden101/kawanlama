@@ -666,10 +666,11 @@ function renderAllTransactions() {
 
 // Function to render transactions (either filtered or all)
 function renderTransactions(transactions) {
-    const container = document.getElementById('history-list');
+    console.log("renderTransactions called with:", transactions);
     
-    if (!transactions || transactions.length === 0) {
-        container.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">Tidak ada transaksi</td></tr>';
+    const container = document.getElementById('history-list');
+    if (!transactions || !Array.isArray(transactions)) {
+        container.innerHTML = '<tr><td colspan="8" style="text-align: center;">Tidak ada transaksi</td></tr>';
         document.getElementById('total-income').textContent = '0';
         return;
     }
@@ -918,12 +919,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function modifyQuantity(transactionId, itemIndex, action) {
     try {
-        const transaction = transactionHistory.find(t => t.id === transactionId);
+        // Get fresh data from transactionHistory
+        const transaction = {...transactionHistory.find(t => t.id === transactionId)};
         if (!transaction) return;
 
         const item = transaction.items[itemIndex];
         if (!item) return;
 
+        // Update quantity
         if (action === 'increase') {
             item.quantity++;
         } else if (action === 'decrease') {
@@ -939,15 +942,24 @@ async function modifyQuantity(transactionId, itemIndex, action) {
             }
         }
 
+        // Recalculate total
         transaction.total = transaction.items.reduce((sum, item) => 
             sum + (item.price * item.quantity), 0
         );
 
+        // Update in Firebase and wait for completion
         await window.FirebaseDB.updateTransaction(transactionId, transaction);
+        
+        // Update local data
+        const index = transactionHistory.findIndex(t => t.id === transactionId);
+        if (index !== -1) {
+            transactionHistory[index] = transaction;
+        }
+        
+        // Render with updated local data
         renderTransactions(transactionHistory);
     } catch (error) {
         console.error('Error:', error);
-        alert('Gagal mengubah quantity: ' + error.message);
     }
 }
 
@@ -1246,7 +1258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         );
 
         await window.FirebaseDB.updateTransaction(transactionId, transaction);
-        renderTransactions(transactionHistory);
+        // Let Firebase listener handle the update
     } catch (error) {
         console.error('Error:', error);
         alert('Gagal mengubah quantity: ' + error.message);
