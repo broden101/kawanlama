@@ -95,23 +95,24 @@ export function saveTransaction(transaction) {
 
     return push(historyRef, transaction);
 }
-
-export function listenToHistory(callback) {
-    return onValue(historyRef, (snapshot) => {
-        const historyArray = snapshotToArray(snapshot);
-        callback(historyArray);
-    });
+export function updateTransaction(transactionId, updatedData) {
+    const transactionRef = ref(db, `history/${transactionId}`);
+    return update(transactionRef, updatedData);
 }
 
-export async function deleteTransaction(transactionId) {
-    try {
-        const transactionRef = ref(db, `history/${transactionId}`);
-        await remove(transactionRef);
-        return true;
-    } catch (error) {
-        console.error("Error deleting transaction:", error);
-        throw error;
-    }
+export function listenToHistory(callback) {
+    const unsubscribe = onValue(ref(db, 'history'), (snapshot) => {
+        const data = snapshot.val();
+        const historyArray = data ? Object.entries(data).map(([id, value]) => ({ id, ...value })) : [];
+        callback(historyArray);
+    });
+    return () => unsubscribe();
+}
+
+
+export function deleteTransaction(transactionId) {
+    const transactionRef = ref(db, `history/${transactionId}`);
+    return remove(transactionRef);
 }
 
 // Membuat objek FirebaseDB untuk expor
