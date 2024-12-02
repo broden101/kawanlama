@@ -659,9 +659,18 @@ function renderAllTransactions() {
 
 // Function to render transactions (either filtered or all)
     function renderTransactions(transactions) {
-        const container = document.getElementById('history-list');
+        if (!transactions || !Array.isArray(transactions)) {
+            console.error('Data transaksi tidak valid:', transactions);
+            return;
+        }
 
+        const container = document.getElementById('history-list');
         container.innerHTML = transactions.map(transaction => {
+            if (!transaction.items || !Array.isArray(transaction.items)) {
+                console.error('Data items tidak valid untuk transaksi:', transaction);
+                return '';
+            }
+
             return transaction.items.map((item, index) => `
                 <tr>
                     ${index === 0 ? `<td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString('id-ID')}</td>` : ''}
@@ -711,6 +720,7 @@ function renderAllTransactions() {
             `).join('');
         }).join('');
     }
+
 
 
 
@@ -924,40 +934,52 @@ document.addEventListener('DOMContentLoaded', () => {
     addModalHTML();
 });
 
-async function modifyQuantity(transactionId, itemIndex, action) {
-    try {
-        const transaction = transactionHistory.find(t => t.id === transactionId);
-        if (!transaction) return;
+    async function modifyQuantity(transactionId, itemIndex, action) {
+        try {
+            const transaction = transactionHistory.find(t => t.id === transactionId);
+            if (!transaction) return;
 
-        const item = transaction.items[itemIndex];
-        if (!item) return;
+            const item = transaction.items[itemIndex];
+            if (!item) return;
 
-        if (action === 'increase') {
-            item.quantity++;
-        } else if (action === 'decrease') {
-            if (item.quantity <= 1) {
-                if (!confirm('Hapus item ini?')) return;
-                transaction.items.splice(itemIndex, 1);
-                if (transaction.items.length === 0) {
-                    await FirebaseDB.deleteTransaction(transactionId);
-                    return;
+            if (action === 'increase') {
+                item.quantity++;
+            } else if (action === 'decrease') {
+                if (item.quantity <= 1) {
+                    if (!confirm('Hapus item ini dari transaksi?')) return;
+                    transaction.items.splice(itemIndex, 1);
+                    if (transaction.items.length === 0) {
+                        await FirebaseDB.deleteTransaction(transactionId);
+                        transactionHistory = transactionHistory.filter(t => t.id !== transactionId);
+                        filterHistoryByRange(); // Panggil filter ulang setelah penghapusan
+                        return;
+                    }
+                } else {
+                    item.quantity--;
                 }
-            } else {
-                item.quantity--;
             }
+
+            transaction.total = transaction.items.reduce((sum, item) =>
+                sum + (item.price * item.quantity), 0
+            );
+
+            await FirebaseDB.updateTransaction(transactionId, transaction);
+
+            // Perbarui transaksi di local state
+            const index = transactionHistory.findIndex(t => t.id === transactionId);
+            if (index !== -1) {
+                transactionHistory[index] = transaction;
+            }
+
+            // Tampilkan data yang difilter ulang
+            filterHistoryByRange();
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Gagal mengubah jumlah item: ' + error.message);
         }
-
-        transaction.total = transaction.items.reduce((sum, item) => 
-            sum + (item.price * item.quantity), 0
-        );
-
-        await FirebaseDB.updateTransaction(transactionId, transaction);
-        renderTransactions(transactionHistory);
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Gagal mengubah jumlah item: ' + error.message);
     }
-}
+
+
 
 
 // 3. Fungsi untuk menghapus transaksi
