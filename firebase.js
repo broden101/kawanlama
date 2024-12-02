@@ -40,47 +40,40 @@ export function saveMenu(menuItem) {
     if (!menuItem.nama || !menuItem.kategori || !menuItem.harga) {
         throw new Error("Menu harus memiliki nama, kategori, dan harga.");
     }
-    return push(menuRef, menuItem)
-        .then(() => console.log("Menu berhasil disimpan:", menuItem))
-        .catch((error) => console.error("Error menyimpan menu:", error.message));
+    return push(menuRef, menuItem);
 }
 
 export function updateMenuItem(id, updates) {
     const menuItemRef = ref(db, `menu/${id}`);
-    return update(menuItemRef, updates)
-        .then(() => console.log("Menu berhasil diperbarui:", updates))
-        .catch((error) => console.error("Error memperbarui menu:", error.message));
+    return update(menuItemRef, updates);
 }
 
 export function deleteMenuItem(id) {
     const menuItemRef = ref(db, `menu/${id}`);
-    return remove(menuItemRef)
-        .then(() => console.log("Menu berhasil dihapus:", id))
-        .catch((error) => console.error("Error menghapus menu:", error.message));
+    return remove(menuItemRef);
 }
 
 export function listenToMenu(callback) {
-    onValue(menuRef, (snapshot) => callback(snapshotToArray(snapshot)));
+    return onValue(menuRef, (snapshot) => {
+        const menuItems = snapshotToArray(snapshot);
+        callback(menuItems);
+    });
 }
 
 export function saveOrder(order) {
     if (!order.customerName || !order.items || !Array.isArray(order.items)) {
         throw new Error("Order harus memiliki nama pelanggan dan items.");
     }
-    return push(ordersRef, order)
-        .then(() => console.log("Order berhasil disimpan:", order))
-        .catch((error) => console.error("Error menyimpan order:", error.message));
+    return push(ordersRef, order);
 }
 
 export function updateOrderStatus(id, status) {
     const orderRef = ref(db, `orders/${id}`);
-    return update(orderRef, { status })
-        .then(() => console.log("Order status berhasil diperbarui:", status))
-        .catch((error) => console.error("Error memperbarui status order:", error.message));
+    return update(orderRef, { status });
 }
 
 export function listenToOrders(callback, statusFilter = null) {
-    onValue(ordersRef, (snapshot) => {
+    return onValue(ordersRef, (snapshot) => {
         const ordersArray = snapshotToArray(snapshot);
         const filteredOrders = statusFilter
             ? ordersArray.filter(order => order.status === statusFilter)
@@ -100,46 +93,39 @@ export function saveTransaction(transaction) {
         price: item.harga || 0
     }));
 
-    return push(historyRef, transaction)
-        .then(() => console.log("Transaction berhasil disimpan:", transaction))
-        .catch((error) => console.error("Error menyimpan transaksi:", error.message));
+    return push(historyRef, transaction);
 }
 
 export function listenToHistory(callback) {
-    onValue(historyRef, (snapshot) => {
-        const data = snapshot.val();
-        console.log("Raw data from Firebase (history):", data);
-        const historyArray = data
-            ? Object.entries(data).map(([id, value]) => ({
-                  id,
-                  ...value
-              }))
-            : [];
-        console.log("Processed history array:", historyArray);
+    return onValue(historyRef, (snapshot) => {
+        const historyArray = snapshotToArray(snapshot);
         callback(historyArray);
     });
 }
 
-export const FirebaseDB = {
-    async updateTransaction(transactionId, updatedData) {
-        try {
-            const transactionRef = ref(db, `history/${transactionId}`);
-            await update(transactionRef, updatedData);
-        } catch (error) {
-            throw new Error('Gagal mengupdate transaksi: ' + error.message);
-        }
-    },
+export async function deleteTransaction(transactionId) {
+    try {
+        const transactionRef = ref(db, `history/${transactionId}`);
+        await remove(transactionRef);
+        return true;
+    } catch (error) {
+        console.error("Error deleting transaction:", error);
+        throw error;
+    }
+}
 
-    async deleteTransaction(transactionId) { // Pastikan fungsi ini ada
-        try {
-            const transactionRef = ref(db, `history/${transactionId}`);
-            console.log(`Menghapus transaksi dengan ID: ${transactionId}`);
-            await remove(transactionRef);
-            console.log(`Transaksi ${transactionId} berhasil dihapus.`);
-        } catch (error) {
-            console.error(`Error menghapus transaksi: ${error.message}`);
-            throw new Error('Gagal menghapus transaksi: ' + error.message);
-        }
-    },
+// Membuat objek FirebaseDB untuk expor
+const FirebaseDB = {
+    saveMenu,
+    updateMenuItem,
+    deleteMenuItem,
+    listenToMenu,
+    saveOrder,
+    updateOrderStatus,
+    listenToOrders,
+    saveTransaction,
+    listenToHistory,
+    deleteTransaction
 };
 
+export { FirebaseDB as default };
