@@ -918,49 +918,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function modifyQuantity(transactionId, itemIndex, action) {
     try {
-        // Cari transaksi berdasarkan ID
         const transaction = transactionHistory.find(t => t.id === transactionId);
-        if (!transaction) {
-            alert('Transaksi tidak ditemukan');
-            return;
-        }
+        if (!transaction) return;
 
         const item = transaction.items[itemIndex];
-        if (!item) {
-            alert('Item tidak ditemukan');
-            return;
-        }
+        if (!item) return;
 
-        // Update quantity item
         if (action === 'increase') {
             item.quantity++;
         } else if (action === 'decrease') {
             if (item.quantity <= 1) {
-                if (confirm('Item terakhir ini akan dihapus. Lanjutkan?')) {
-                    transaction.items.splice(itemIndex, 1);
+                if (!confirm('Hapus item ini?')) return;
+                transaction.items.splice(itemIndex, 1);
+                if (transaction.items.length === 0) {
+                    await window.FirebaseDB.deleteTransaction(transactionId);
+                    return;
                 }
             } else {
                 item.quantity--;
             }
         }
 
-        // Recalculate total
-        transaction.total = transaction.items.reduce(
-            (sum, item) => sum + ((item.price || item.harga) * item.quantity),
-            0
+        transaction.total = transaction.items.reduce((sum, item) => 
+            sum + (item.price * item.quantity), 0
         );
 
-        console.log('Memperbarui transaksi ke Firebase:', transaction);
-        // Update Firebase
-        await FirebaseDB.updateTransaction(transactionId, transaction);
-
-        // Render ulang data
+        await window.FirebaseDB.updateTransaction(transactionId, transaction);
         renderTransactions(transactionHistory);
-
-        alert('Item berhasil dimodifikasi!');
     } catch (error) {
-        console.error('Error modifying quantity:', error);
-        alert('Gagal memodifikasi item: ' + error.message);
+        console.error('Error:', error);
+        alert('Gagal mengubah quantity: ' + error.message);
     }
 }
 
@@ -1225,12 +1212,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log("Export ke Excel selesai!");
         }
-
+    
 
 
     // Tambahkan ke window scope
     window.exportToExcel = exportToExcel;
     window.transactionHistory = transactionHistory;
+    async function modifyQuantity(transactionId, itemIndex, action) {
+    try {
+        const transaction = transactionHistory.find(t => t.id === transactionId);
+        if (!transaction) return;
+
+        const item = transaction.items[itemIndex];
+        if (!item) return;
+
+        if (action === 'increase') {
+            item.quantity++;
+        } else if (action === 'decrease') {
+            if (item.quantity <= 1) {
+                if (!confirm('Hapus item ini?')) return;
+                transaction.items.splice(itemIndex, 1);
+                if (transaction.items.length === 0) {
+                    await window.FirebaseDB.deleteTransaction(transactionId);
+                    return;
+                }
+            } else {
+                item.quantity--;
+            }
+        }
+
+        transaction.total = transaction.items.reduce((sum, item) => 
+            sum + (item.price * item.quantity), 0
+        );
+
+        await window.FirebaseDB.updateTransaction(transactionId, transaction);
+        renderTransactions(transactionHistory);
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Gagal mengubah quantity: ' + error.message);
+    }
+}
     </script>
         
 </body>
