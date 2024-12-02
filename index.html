@@ -658,47 +658,60 @@ function renderAllTransactions() {
 }
 
 // Function to render transactions (either filtered or all)
-function renderTransactions(transactions) {
-    const container = document.getElementById('history-list');
+    function renderTransactions(transactions) {
+        const container = document.getElementById('history-list');
 
-    container.innerHTML = transactions.map(transaction => {
-        return transaction.items.map((item, index) => `
-            <tr>
-                ${index === 0 ? `<td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString('id-ID')}</td>` : ''}
-                ${index === 0 ? `<td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>` : ''}
-                <td>${item.name || 'Item Tidak Diketahui'}</td>
-                <td>${item.quantity}</td>
-                <td>Rp ${(item.price || 0).toLocaleString('id-ID')}</td>
-                ${index === 0 ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString('id-ID')}</td>` : ''}
-                ${index === 0 ? `
-                    <td rowspan="${transaction.items.length}">
-                        <span class="status-badge" style="background: ${
-                            transaction.paymentMethod === 'cash' ? '#28a745' : 
-                            transaction.paymentMethod === 'qris' ? '#17a2b8' : 
-                            '#ffc107'}">
-                            ${transaction.paymentMethod === 'cash' ? 'Tunai' : 
-                            transaction.paymentMethod === 'qris' ? 'QRIS' : 
-                            'Belum Memilih'}
-                        </span>
+        container.innerHTML = transactions.map(transaction => {
+            return transaction.items.map((item, index) => `
+                <tr>
+                    ${index === 0 ? `<td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString('id-ID')}</td>` : ''}
+                    ${index === 0 ? `<td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>` : ''}
+                    <td>${item.name || 'Item Tidak Diketahui'}</td>
+                    <td>
+                        ${item.quantity}
+                        <button onclick="modifyQuantity('${transaction.id}', ${index}, 'decrease')" class="action-btn" style="background: #dc3545;">-</button>
+                        <button onclick="modifyQuantity('${transaction.id}', ${index}, 'increase')" class="action-btn" style="background: #28a745;">+</button>
                     </td>
-                ` : ''}
-                ${index === 0 ? `
-                    <td rowspan="${transaction.items.length}">
-                        ${transaction.paymentStatus === 'paid' && transaction.paymentMethod !== 'Belum Memilih' ? `
-                            <span style="color: #28a745;">✓ Lunas</span>
-                        ` : `
-                            <span style="color: #dc3545;">✗ Belum Lunas</span>
-                            <button onclick="promptPayment('${transaction.id}')" 
-                                    class="action-btn" style="background: #28a745;">
-                                Bayar Sekarang
+                    <td>Rp ${(item.price || 0).toLocaleString('id-ID')}</td>
+                    ${index === 0 ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString('id-ID')}</td>` : ''}
+                    ${index === 0 ? `
+                        <td rowspan="${transaction.items.length}">
+                            <span class="status-badge" style="background: ${
+                                transaction.paymentMethod === 'cash' ? '#28a745' : 
+                                transaction.paymentMethod === 'qris' ? '#17a2b8' : 
+                                '#ffc107'}">
+                                ${transaction.paymentMethod === 'cash' ? 'Tunai' : 
+                                transaction.paymentMethod === 'qris' ? 'QRIS' : 
+                                'Belum Memilih'}
+                            </span>
+                        </td>
+                    ` : ''}
+                    ${index === 0 ? `
+                        <td rowspan="${transaction.items.length}">
+                            ${transaction.paymentStatus === 'pending' ? `
+                                <span style="color: #dc3545;">✗ Belum Lunas</span>
+                                <button onclick="promptPayment('${transaction.id}')" 
+                                        class="action-btn" style="background: #28a745;">
+                                    Bayar Sekarang
+                                </button>
+                            ` : `
+                                <span style="color: #28a745;">✓ Lunas</span>
+                            `}
+                        </td>
+                    ` : ''}
+                    ${index === 0 ? `
+                        <td rowspan="${transaction.items.length}">
+                            <button onclick="deleteTransaction('${transaction.id}')" 
+                                    class="action-btn" style="background: #dc3545;">
+                                Hapus
                             </button>
-                        `}
-                    </td>
-                ` : ''}
-            </tr>
-        `).join('');
-    }).join('');
-}
+                        </td>
+                    ` : ''}
+                </tr>
+            `).join('');
+        }).join('');
+    }
+
 
 
 function addModalHTML() {
@@ -913,14 +926,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function modifyQuantity(transactionId, itemIndex, action) {
     try {
-        // Get fresh data from transactionHistory
-        const transaction = {...transactionHistory.find(t => t.id === transactionId)};
+        const transaction = transactionHistory.find(t => t.id === transactionId);
         if (!transaction) return;
 
         const item = transaction.items[itemIndex];
         if (!item) return;
 
-        // Update quantity
         if (action === 'increase') {
             item.quantity++;
         } else if (action === 'decrease') {
@@ -928,7 +939,7 @@ async function modifyQuantity(transactionId, itemIndex, action) {
                 if (!confirm('Hapus item ini?')) return;
                 transaction.items.splice(itemIndex, 1);
                 if (transaction.items.length === 0) {
-                    await window.FirebaseDB.deleteTransaction(transactionId);
+                    await FirebaseDB.deleteTransaction(transactionId);
                     return;
                 }
             } else {
@@ -936,44 +947,35 @@ async function modifyQuantity(transactionId, itemIndex, action) {
             }
         }
 
-        // Recalculate total
         transaction.total = transaction.items.reduce((sum, item) => 
             sum + (item.price * item.quantity), 0
         );
 
-        // Update in Firebase and wait for completion
-        await window.FirebaseDB.updateTransaction(transactionId, transaction);
-        
-        // Update local data
-        const index = transactionHistory.findIndex(t => t.id === transactionId);
-        if (index !== -1) {
-            transactionHistory[index] = transaction;
-        }
-        
-        // Render with updated local data
+        await FirebaseDB.updateTransaction(transactionId, transaction);
         renderTransactions(transactionHistory);
     } catch (error) {
         console.error('Error:', error);
+        alert('Gagal mengubah jumlah item: ' + error.message);
     }
 }
 
-// 3. Fungsi untuk menghapus transaksi
-       async function deleteTransaction(transactionId) {
-            if (!confirm('Yakin ingin menghapus transaksi ini?')) {
-                return;
-            }
 
-            try {
-                await window.FirebaseDB.deleteTransaction(transactionId);
-                // or if using ES modules:
-                // await deleteTransaction(transactionId);
-                alert('Transaksi berhasil dihapus!');
-                location.reload();
-            } catch (error) {
-                console.error('Error menghapus transaksi:', error);
-                alert('Gagal menghapus transaksi: ' + error.message);
+// 3. Fungsi untuk menghapus transaksi
+        async function deleteTransaction(transactionId) {
+                if (!confirm('Yakin ingin menghapus transaksi ini?')) {
+                    return;
+                }
+
+                try {
+                    await FirebaseDB.deleteTransaction(transactionId);
+                    transactionHistory = transactionHistory.filter(t => t.id !== transactionId);
+                    renderTransactions(transactionHistory);
+                    alert('Transaksi berhasil dihapus!');
+                } catch (error) {
+                    console.error('Error menghapus transaksi:', error);
+                    alert('Gagal menghapus transaksi: ' + error.message);
+                }
             }
-        }
 
             async function updatePaymentStatus(transactionId) {
                 try {
