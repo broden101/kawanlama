@@ -916,10 +916,9 @@ document.addEventListener('DOMContentLoaded', () => {
     addModalHTML();
 });
 
-
 async function modifyQuantity(transactionId, itemIndex, action) {
     try {
-        // Ambil data transaksi dari Firebase
+        // Cari transaksi berdasarkan ID
         const transaction = transactionHistory.find(t => t.id === transactionId);
         if (!transaction) {
             alert('Transaksi tidak ditemukan');
@@ -932,19 +931,12 @@ async function modifyQuantity(transactionId, itemIndex, action) {
             return;
         }
 
-        // Update quantity
+        // Update quantity item
         if (action === 'increase') {
             item.quantity++;
         } else if (action === 'decrease') {
             if (item.quantity <= 1) {
-                if (transaction.items.length <= 1) {
-                    if (confirm('Ini adalah item terakhir. Hapus transaksi?')) {
-                        await deleteTransaction(transactionId);
-                        return;
-                    }
-                    return;
-                }
-                if (confirm('Hapus item ini?')) {
+                if (confirm('Item terakhir ini akan dihapus. Lanjutkan?')) {
                     transaction.items.splice(itemIndex, 1);
                 }
             } else {
@@ -952,22 +944,26 @@ async function modifyQuantity(transactionId, itemIndex, action) {
             }
         }
 
-        // Hitung ulang total
-        transaction.total = transaction.items.reduce((sum, item) => 
-            sum + ((item.harga || item.price) * item.quantity), 0);
+        // Recalculate total
+        transaction.total = transaction.items.reduce(
+            (sum, item) => sum + ((item.price || item.harga) * item.quantity),
+            0
+        );
 
-        // Update di Firebase
+        console.log('Memperbarui transaksi ke Firebase:', transaction);
+        // Update Firebase
         await FirebaseDB.updateTransaction(transactionId, transaction);
-        
-        // Update UI
+
+        // Render ulang data
         renderTransactions(transactionHistory);
-        
-        alert('Pesanan berhasil dimodifikasi!');
+
+        alert('Item berhasil dimodifikasi!');
     } catch (error) {
         console.error('Error modifying quantity:', error);
-        alert('Gagal memodifikasi pesanan: ' + error.message);
+        alert('Gagal memodifikasi item: ' + error.message);
     }
 }
+
 // 3. Fungsi untuk menghapus transaksi
 async function deleteTransaction(transactionId) {
     if (!confirm('Yakin ingin menghapus transaksi ini?')) {
