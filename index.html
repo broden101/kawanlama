@@ -965,19 +965,28 @@ async function modifyQuantity(transactionId, itemIndex, action) {
 }
 
 // 3. Fungsi untuk menghapus transaksi
-async function deleteTransaction(transactionId) {
-    if (!confirm('Yakin ingin menghapus transaksi ini?')) {
-        return;
-    }
+        async function deleteTransaction(transactionId) {
+            if (!confirm('Yakin ingin menghapus transaksi ini?')) {
+                return; // Jika pengguna membatalkan, hentikan
+            }
 
-    try {
-        await FirebaseDB.deleteTransaction(transactionId);
-        alert('Transaksi berhasil dihapus!');
-    } catch (error) {
-        console.error('Error deleting transaction:', error);
-        alert('Gagal menghapus transaksi: ' + error.message);
-    }
-}
+            try {
+                console.log(`Menghapus transaksi dengan ID: ${transactionId}`);
+                await FirebaseDB.deleteTransaction(transactionId); // Panggil fungsi dari firebase.js
+
+                // Hapus dari array lokal
+                transactionHistory = transactionHistory.filter(transaction => transaction.id !== transactionId);
+
+                // Render ulang data di UI
+                renderTransactions(transactionHistory);
+
+                alert('Transaksi berhasil dihapus!');
+            } catch (error) {
+                console.error('Error menghapus transaksi:', error);
+                alert('Gagal menghapus transaksi: ' + error.message);
+            }
+        }
+
 
 
 // Function to reset date filters
