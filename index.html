@@ -293,6 +293,16 @@
                         <button class="payment-btn selected" id="cash-btn" onclick="selectPayment('cash')">Tunai</button>
                         <button class="payment-btn" id="qris-btn" onclick="selectPayment('qris')">QRIS</button>
                     </div>
+                    <div class="payment-timing" style="margin: 10px 0;">
+                        <label style="margin-right: 10px;">
+                            <input type="radio" name="payment-timing" id="pay-now" checked>
+                            Bayar Sekarang
+                        </label>
+                        <label>
+                            <input type="radio" name="payment-timing" id="pay-later">
+                            Bayar Nanti
+                        </label>
+                    </div>
                     <button class="btn btn-complete" onclick="checkout()">Bayar</button>
                 </div>
             </div>
@@ -355,6 +365,8 @@
                             <th>Harga</th>
                             <th>Total</th>
                             <th>Pembayaran</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="history-list"></tbody>
@@ -666,25 +678,24 @@ function renderAllTransactions() {
 
 // Function to render transactions (either filtered or all)
 function renderTransactions(transactions) {
-    console.log("renderTransactions called with:", transactions);
-    
     const container = document.getElementById('history-list');
+    
     if (!transactions || !Array.isArray(transactions)) {
-        container.innerHTML = '<tr><td colspan="8" style="text-align: center;">Tidak ada transaksi</td></tr>';
+        container.innerHTML = '<tr><td colspan="9" style="text-align: center;">Tidak ada transaksi</td></tr>';
         document.getElementById('total-income').textContent = '0';
         return;
     }
 
     container.innerHTML = transactions.map(transaction => {
-        const itemsHtml = transaction.items.map((item, index) => `
+        return transaction.items.map((item, index) => `
             <tr>
                 ${index === 0 ? `<td rowspan="${transaction.items.length + 1}">${new Date(transaction.date).toLocaleString('id-ID')}</td>` : ''}
                 ${index === 0 ? `<td rowspan="${transaction.items.length + 1}">${transaction.customerName || 'Tidak Diketahui'}</td>` : ''}
                 <td>${item.nama || item.name || 'Item Tidak Diketahui'}</td>
                 <td>
                     ${item.quantity || 0}
-                    <button onclick="modifyQuantity('${transaction.id}', ${index}, 'decrease')" class="action-btn" style="background: #dc3545; margin: 0 2px;">-</button>
-                    <button onclick="modifyQuantity('${transaction.id}', ${index}, 'increase')" class="action-btn" style="background: #28a745; margin: 0 2px;">+</button>
+                    <button onclick="modifyQuantity('${transaction.id}', ${index}, 'decrease')" class="action-btn" style="background: #dc3545;">-</button>
+                    <button onclick="modifyQuantity('${transaction.id}', ${index}, 'increase')" class="action-btn" style="background: #28a745;">+</button>
                 </td>
                 <td>Rp ${(item.harga || item.price || 0).toLocaleString('id-ID')}</td>
                 ${index === 0 ? `<td rowspan="${transaction.items.length + 1}">Rp ${transaction.total.toLocaleString()}</td>` : ''}
@@ -697,25 +708,33 @@ function renderTransactions(transactions) {
                 ` : ''}
                 ${index === 0 ? `
                     <td rowspan="${transaction.items.length + 1}">
-                        <button onclick="deleteTransaction('${transaction.id}')" class="action-btn" style="background: #dc3545;">Hapus</button>
+                        <span class="payment-status ${transaction.paymentStatus === 'paid' ? 'paid' : 'pending'}" 
+                              style="font-size: 1.5em; margin-right: 10px;">
+                            ${transaction.paymentStatus === 'paid' ? '✓' : '✗'}
+                        </span>
+                        ${transaction.paymentStatus === 'pending' ? `
+                            <button onclick="updatePaymentStatus('${transaction.id}', 'paid')" 
+                                    class="action-btn" style="background: #28a745;">
+                                Bayar
+                            </button>
+                        ` : ''}
+                    </td>
+                ` : ''}
+                ${index === 0 ? `
+                    <td rowspan="${transaction.items.length + 1}">
+                        <button onclick="deleteTransaction('${transaction.id}')" 
+                                class="action-btn" style="background: #dc3545;">
+                            Hapus
+                        </button>
                     </td>
                 ` : ''}
             </tr>
         `).join('');
-
-        // Tambahkan baris untuk tombol "Tambah Item"
-        return itemsHtml + `
-            <tr>
-                <td colspan="3">
-                    <button onclick="showAddItemModal('${transaction.id}')" class="action-btn" style="background: #17a2b8; width: 100%;">
-                        + Tambah Item
-                    </button>
-                </td>
-            </tr>
-        `;
     }).join('');
 
-    const totalIncome = transactions.reduce((sum, transaction) => sum + (transaction.total || 0), 0);
+    const totalIncome = transactions
+        .filter(t => t.paymentStatus === 'paid')
+        .reduce((sum, transaction) => sum + (transaction.total || 0), 0);
     document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
 }
 
@@ -840,9 +859,22 @@ function addModalHTML() {
             border-radius: 4px;
             cursor: pointer;
         }
-    `;
-    document.head.appendChild(style);
-}
+        .payment-status {
+        display: inline-block;
+        margin-right: 10px;
+        font-size: 1.2em;
+        }
+
+        .payment-status.paid {
+            color: #28a745;
+        }
+
+        .payment-status.pending {
+            color: #dc3545;
+        }
+            `;
+            document.head.appendChild(style);
+        }
 
 function showAddItemModal(transactionId) {
     window.currentTransactionId = transactionId;
