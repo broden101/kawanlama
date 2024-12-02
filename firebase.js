@@ -72,6 +72,12 @@ export function updateOrderStatus(id, status) {
     return update(orderRef, { status });
 }
 
+export function updatePaymentStatus(transactionId) {
+    const transactionRef = ref(db, `history/${transactionId}`);
+    return update(transactionRef, { paymentStatus: 'paid' });
+}
+
+
 export function listenToOrders(callback, statusFilter = null) {
     return onValue(ordersRef, (snapshot) => {
         const ordersArray = snapshotToArray(snapshot);
@@ -87,6 +93,11 @@ export function saveTransaction(transaction) {
         throw new Error("Transaction harus memiliki items.");
     }
 
+    // Tambahkan properti default untuk metode pembayaran dan status pembayaran
+    transaction.paymentStatus = transaction.paymentStatus || 'pending'; // Default ke "pending"
+    transaction.paymentMethod = transaction.paymentMethod || 'not_selected'; // Default ke "not_selected"
+    transaction.date = transaction.date || new Date().toISOString(); // Tambahkan tanggal jika belum ada
+
     transaction.items = transaction.items.map(item => ({
         name: item.nama || "Item Tidak Diketahui",
         quantity: item.quantity || 1,
@@ -95,10 +106,12 @@ export function saveTransaction(transaction) {
 
     return push(historyRef, transaction);
 }
+
 export function updateTransaction(transactionId, updatedData) {
     const transactionRef = ref(db, `history/${transactionId}`);
     return update(transactionRef, updatedData);
 }
+
 
 // In firebase.js
 export function listenToHistory(callback) {
