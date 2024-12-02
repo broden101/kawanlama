@@ -100,13 +100,30 @@ export function updateTransaction(transactionId, updatedData) {
     return update(transactionRef, updatedData);
 }
 
+// In firebase.js
 export function listenToHistory(callback) {
-    const unsubscribe = onValue(ref(db, 'history'), (snapshot) => {
+    return onValue(ref(db, 'history'), (snapshot) => {
         const data = snapshot.val();
-        const historyArray = data ? Object.entries(data).map(([id, value]) => ({ id, ...value })) : [];
+        if (!data) return callback([]);
+        
+        const historyArray = Object.entries(data).map(([id, value]) => ({ id, ...value }));
         callback(historyArray);
+        
+        // Update filtered transactions immediately
+        if (window.filteredTransactions) {
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            const startDateTime = new Date(startDate + 'T00:00:00');
+            const endDateTime = new Date(endDate + 'T23:59:59');
+            
+            window.filteredTransactions = historyArray.filter(transaction => {
+                const transactionDate = new Date(transaction.date);
+                return transactionDate >= startDateTime && transactionDate <= endDateTime;
+            });
+            
+            renderTransactions(window.filteredTransactions);
+        }
     });
-    return () => unsubscribe();
 }
 
 
