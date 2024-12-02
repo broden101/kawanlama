@@ -20,7 +20,7 @@ const firebaseConfig = {
     measurementId: "G-MPX5RR24J5"
 };
 
-// Initialize Firebase
+// Firebase Initialization
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
@@ -94,7 +94,6 @@ export function saveTransaction(transaction) {
         throw new Error("Transaction harus memiliki items.");
     }
 
-    // Pastikan setiap item memiliki nama dan harga
     transaction.items = transaction.items.map(item => ({
         name: item.nama || "Item Tidak Diketahui",
         quantity: item.quantity || 1,
@@ -106,19 +105,43 @@ export function saveTransaction(transaction) {
         .catch((error) => console.error("Error menyimpan transaksi:", error.message));
 }
 
-
 export function listenToHistory(callback) {
     onValue(historyRef, (snapshot) => {
         const data = snapshot.val();
-        console.log("Raw data from Firebase (history):", data); // Debugging log
+        console.log("Raw data from Firebase (history):", data);
         const historyArray = data
             ? Object.entries(data).map(([id, value]) => ({
                   id,
                   ...value
               }))
             : [];
-        console.log("Processed history array:", historyArray); // Debugging log
+        console.log("Processed history array:", historyArray);
         callback(historyArray);
     });
 }
 
+export const FirebaseDB = {
+    async updateTransaction(transactionId, updatedData) {
+        try {
+            const transactionRef = ref(db, `history/${transactionId}`); // Path yang benar
+            console.log(`Mengupdate transaksi dengan ID: ${transactionId}`, updatedData);
+            await update(transactionRef, updatedData);
+            console.log(`Transaksi ${transactionId} berhasil diperbarui.`);
+        } catch (error) {
+            console.error(`Error mengupdate transaksi: ${error.message}`);
+            throw new Error('Gagal mengupdate transaksi: ' + error.message);
+        }
+    },
+
+    async deleteTransaction(transactionId) {
+        try {
+            const transactionRef = ref(db, `history/${transactionId}`);
+            console.log(`Menghapus transaksi dengan ID: ${transactionId}`);
+            await remove(transactionRef);
+            console.log(`Transaksi ${transactionId} berhasil dihapus.`);
+        } catch (error) {
+            console.error(`Error menghapus transaksi: ${error.message}`);
+            throw new Error('Gagal menghapus transaksi: ' + error.message);
+        }
+    },
+};
