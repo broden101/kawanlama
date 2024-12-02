@@ -1167,72 +1167,83 @@ document.addEventListener('DOMContentLoaded', () => {
         window.updateCart = updateCart;
         
         function exportToExcel() {
-        const sheetData = [];
+            console.log("Memulai export ke Excel...");
+            console.log("Data transactionHistory:", transactionHistory);
 
-        // Tambahkan Header untuk Detail Penjualan
-        sheetData.push(['Tanggal', 'Nama', 'Pesanan', 'Quantity', 'Harga', 'Total', 'Metode Pembayaran']);
+            // Pastikan transactionHistory tidak kosong
+            if (!transactionHistory || transactionHistory.length === 0) {
+                alert("Tidak ada data transaksi untuk diekspor.");
+                return;
+            }
 
-        // Tambahkan Detail Penjualan ke dalam sheet
-        transactionHistory.forEach(transaction => {
-            transaction.items.forEach((item, index) => {
-                sheetData.push([
-                    index === 0 ? new Date(transaction.date).toLocaleString('id-ID') : '', // Tanggal hanya di baris pertama transaksi
-                    index === 0 ? transaction.customerName || 'Tidak Diketahui' : '',     // Nama hanya di baris pertama transaksi
-                    `${item.name || 'Tidak Diketahui'} (x${item.quantity})`,
-                    item.quantity,
-                    `Rp ${(item.price || 0).toLocaleString('id-ID')}`,
-                    index === 0 ? `Rp ${transaction.total.toLocaleString('id-ID')}` : '', // Total hanya di baris pertama
-                    index === 0 ? (transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS') : '' // Metode Pembayaran hanya di baris pertama
-                ]);
+            // Data untuk Excel
+            const sheetData = [
+                // Header tabel
+                ['Tanggal', 'Nama', 'Pesanan', 'Quantity', 'Harga', 'Total', 'Metode Pembayaran']
+            ];
+
+            // Mapping data transaksi ke sheetData
+            transactionHistory.forEach(transaction => {
+                if (!transaction.items || transaction.items.length === 0) {
+                    console.warn("Transaksi tanpa item:", transaction);
+                    return;
+                }
+
+                transaction.items.forEach((item, index) => {
+                    sheetData.push([
+                        index === 0 ? new Date(transaction.date).toLocaleString('id-ID') : '', // Tanggal hanya di baris pertama transaksi
+                        index === 0 ? transaction.customerName || 'Tidak Diketahui' : '',     // Nama hanya di baris pertama transaksi
+                        item.name || 'Tidak Diketahui',                                       // Nama item
+                        item.quantity || 0,                                                  // Jumlah
+                        `Rp ${(item.price || 0).toLocaleString('id-ID')}`,                   // Harga
+                        index === 0 ? `Rp ${transaction.total.toLocaleString('id-ID')}` : '', // Total hanya di baris pertama
+                        index === 0 ? (transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS') : '' // Metode Pembayaran
+                    ]);
+                });
+
+                // Tambahkan baris kosong untuk pemisah antar transaksi (opsional)
+                sheetData.push([]);
             });
-        });
 
-        // Tambahkan Baris Kosong untuk Pemisah
-        sheetData.push([]);
-        sheetData.push([]);
-        sheetData.push([]);
-        sheetData.push(['Ringkasan Penjualan']); // Header Ringkasan
-        sheetData.push(['Total Penjualan', `Rp ${transactionHistory.reduce((sum, t) => sum + t.total, 0).toLocaleString('id-ID')}`]);
-        sheetData.push(['Jumlah Transaksi', transactionHistory.length]);
-        sheetData.push([
-            'Pembayaran Tunai', 
-            `Rp ${transactionHistory
-                .filter(t => t.paymentMethod === 'cash')
-                .reduce((sum, t) => sum + t.total, 0).toLocaleString('id-ID')} (${transactionHistory.filter(t => t.paymentMethod === 'cash').length} transaksi)`
-        ]);
-        sheetData.push([
-            'Pembayaran QRIS', 
-            `Rp ${transactionHistory
-                .filter(t => t.paymentMethod === 'qris')
-                .reduce((sum, t) => sum + t.total, 0).toLocaleString('id-ID')} (${transactionHistory.filter(t => t.paymentMethod === 'qris').length} transaksi)`
-        ]);
+            // Tambahkan ringkasan
+            const totalIncome = transactionHistory.reduce((sum, t) => sum + (t.total || 0), 0);
+            sheetData.push([]);
+            sheetData.push(['Ringkasan Penjualan']);
+            sheetData.push(['Total Penjualan', `Rp ${totalIncome.toLocaleString('id-ID')}`]);
+            sheetData.push(['Jumlah Transaksi', transactionHistory.length]);
+            sheetData.push([
+                'Pembayaran Tunai', 
+                `Rp ${transactionHistory
+                    .filter(t => t.paymentMethod === 'cash')
+                    .reduce((sum, t) => sum + t.total, 0).toLocaleString('id-ID')} (${transactionHistory.filter(t => t.paymentMethod === 'cash').length} transaksi)`
+            ]);
+            sheetData.push([
+                'Pembayaran QRIS', 
+                `Rp ${transactionHistory
+                    .filter(t => t.paymentMethod === 'qris')
+                    .reduce((sum, t) => sum + t.total, 0).toLocaleString('id-ID')} (${transactionHistory.filter(t => t.paymentMethod === 'qris').length} transaksi)`
+            ]);
 
-        // Buat workbook Excel
-        const wb = XLSX.utils.book_new();
+            // Buat workbook dan worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
-        // Sheet: Detail dan Ringkasan Penjualan
-        const ws = XLSX.utils.aoa_to_sheet(sheetData); // Menggunakan Array of Arrays untuk data gabungan
-        ws['!cols'] = [
-            { wch: 20 }, // Tanggal
-            { wch: 20 }, // Nama
-            { wch: 50 }, // Pesanan
-            { wch: 10 }, // Quantity
-            { wch: 20 }, // Harga
-            { wch: 20 }, // Total
-            { wch: 20 }  // Metode Pembayaran
-        ];
+            // Tambahkan worksheet ke workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Laporan Penjualan");
 
-        XLSX.utils.book_append_sheet(wb, ws, "Laporan Penjualan");
+            // Unduh file
+            const dateStr = new Date().toISOString().slice(0, 10); // Format YYYY-MM-DD
+            const fileName = `Laporan_Penjualan_${dateStr}.xlsx`;
+            XLSX.writeFile(wb, fileName);
 
-        // Unduh file Excel
-        const dateStr = new Date().toISOString().slice(0, 10); // Format YYYY-MM-DD
-        const fileName = `Laporan_Penjualan_${dateStr}.xlsx`;
-        XLSX.writeFile(wb, fileName);
-    }
+            console.log("Export ke Excel selesai!");
+        }
+
 
 
     // Tambahkan ke window scope
     window.exportToExcel = exportToExcel;
+    window.transactionHistory = transactionHistory;
     </script>
         
 </body>
