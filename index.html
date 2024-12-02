@@ -640,29 +640,24 @@
 
     // Jalankan filter otomatis untuk menampilkan data hari ini
     filterHistoryByRange();
-});
-
-function filterHistoryByRange() {
-    const startDateInput = document.getElementById('start-date').value;
-    const endDateInput = document.getElementById('end-date').value;
-
-    // Konversi input tanggal ke objek Date dengan zona waktu lokal
-    const startDateTime = new Date(startDateInput + 'T00:00:00');
-    const endDateTime = new Date(endDateInput + 'T23:59:59');
-
-    console.log("Filtering dari:", startDateTime);
-    console.log("Sampai:", endDateTime);
-
-    const filteredHistory = transactionHistory.filter(transaction => {
-        const transactionDate = new Date(transaction.date);
-        console.log("Tanggal transaksi:", transactionDate);
-        
-        return transactionDate >= startDateTime && transactionDate <= endDateTime;
     });
+    let filteredTransactions = []; // Variabel global untuk data yang difilter
 
-    console.log("Hasil filter:", filteredHistory);
-    renderTransactions(filteredHistory);
-}
+    function filterHistoryByRange() {
+        const startDateInput = document.getElementById('start-date').value;
+        const endDateInput = document.getElementById('end-date').value;
+
+        const startDateTime = new Date(startDateInput + 'T00:00:00');
+        const endDateTime = new Date(endDateInput + 'T23:59:59');
+
+        filteredTransactions = transactionHistory.filter(transaction => {
+            const transactionDate = new Date(transaction.date);
+            return transactionDate >= startDateTime && transactionDate <= endDateTime;
+        });
+
+        renderTransactions(filteredTransactions); // Tampilkan data yang difilter
+        console.log("Data yang difilter:", filteredTransactions); // Debugging
+    }
 
 // Function to render all transactions without filtering
 function renderAllTransactions() {
@@ -1168,27 +1163,20 @@ document.addEventListener('DOMContentLoaded', () => {
         
         function exportToExcel() {
             console.log("Memulai export ke Excel...");
-            console.log("Data transactionHistory:", transactionHistory);
+            console.log("Data filteredTransactions:", filteredTransactions);
 
-            // Pastikan transactionHistory tidak kosong
-            if (!transactionHistory || transactionHistory.length === 0) {
-                alert("Tidak ada data transaksi untuk diekspor.");
+            if (!filteredTransactions || filteredTransactions.length === 0) {
+                alert("Tidak ada data transaksi yang sesuai dengan filter untuk diekspor.");
                 return;
             }
 
             // Data untuk Excel
             const sheetData = [
-                // Header tabel
                 ['Tanggal', 'Nama', 'Pesanan', 'Quantity', 'Harga', 'Total', 'Metode Pembayaran']
             ];
 
-            // Mapping data transaksi ke sheetData
-            transactionHistory.forEach(transaction => {
-                if (!transaction.items || transaction.items.length === 0) {
-                    console.warn("Transaksi tanpa item:", transaction);
-                    return;
-                }
-
+            // Mapping data transaksi yang telah difilter
+            filteredTransactions.forEach(transaction => {
                 transaction.items.forEach((item, index) => {
                     sheetData.push([
                         index === 0 ? new Date(transaction.date).toLocaleString('id-ID') : '', // Tanggal hanya di baris pertama transaksi
@@ -1201,38 +1189,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     ]);
                 });
 
-                // Tambahkan baris kosong untuk pemisah antar transaksi (opsional)
-                sheetData.push([]);
+                sheetData.push([]); // Baris kosong untuk pemisah antar transaksi
             });
 
-            // Tambahkan ringkasan
-            const totalIncome = transactionHistory.reduce((sum, t) => sum + (t.total || 0), 0);
+            // Tambahkan ringkasan untuk transaksi yang difilter
+            const totalIncome = filteredTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
             sheetData.push([]);
             sheetData.push(['Ringkasan Penjualan']);
             sheetData.push(['Total Penjualan', `Rp ${totalIncome.toLocaleString('id-ID')}`]);
-            sheetData.push(['Jumlah Transaksi', transactionHistory.length]);
+            sheetData.push(['Jumlah Transaksi', filteredTransactions.length]);
             sheetData.push([
                 'Pembayaran Tunai', 
-                `Rp ${transactionHistory
+                `Rp ${filteredTransactions
                     .filter(t => t.paymentMethod === 'cash')
-                    .reduce((sum, t) => sum + t.total, 0).toLocaleString('id-ID')} (${transactionHistory.filter(t => t.paymentMethod === 'cash').length} transaksi)`
+                    .reduce((sum, t) => sum + t.total, 0).toLocaleString('id-ID')} (${filteredTransactions.filter(t => t.paymentMethod === 'cash').length} transaksi)`
             ]);
             sheetData.push([
                 'Pembayaran QRIS', 
-                `Rp ${transactionHistory
+                `Rp ${filteredTransactions
                     .filter(t => t.paymentMethod === 'qris')
-                    .reduce((sum, t) => sum + t.total, 0).toLocaleString('id-ID')} (${transactionHistory.filter(t => t.paymentMethod === 'qris').length} transaksi)`
+                    .reduce((sum, t) => sum + t.total, 0).toLocaleString('id-ID')} (${filteredTransactions.filter(t => t.paymentMethod === 'qris').length} transaksi)`
             ]);
 
-            // Buat workbook dan worksheet
+            // Buat workbook dan sheet
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
-            // Tambahkan worksheet ke workbook
             XLSX.utils.book_append_sheet(wb, ws, "Laporan Penjualan");
 
-            // Unduh file
-            const dateStr = new Date().toISOString().slice(0, 10); // Format YYYY-MM-DD
+            // Simpan file Excel
+            const dateStr = new Date().toISOString().slice(0, 10);
             const fileName = `Laporan_Penjualan_${dateStr}.xlsx`;
             XLSX.writeFile(wb, fileName);
 
