@@ -965,22 +965,17 @@ async function modifyQuantity(transactionId, itemIndex, action) {
 }
 
 // 3. Fungsi untuk menghapus transaksi
-        async function deleteTransaction(transactionId) {
+       async function deleteTransaction(transactionId) {
             if (!confirm('Yakin ingin menghapus transaksi ini?')) {
-                return; // Jika pengguna membatalkan, hentikan
+                return;
             }
 
             try {
-                console.log(`Menghapus transaksi dengan ID: ${transactionId}`);
-                await FirebaseDB.deleteTransaction(transactionId); // Panggil fungsi dari firebase.js
-
-                // Hapus dari array lokal
-                transactionHistory = transactionHistory.filter(transaction => transaction.id !== transactionId);
-
-                // Render ulang data di UI
-                renderTransactions(transactionHistory);
-
+                await window.FirebaseDB.deleteTransaction(transactionId);
+                // or if using ES modules:
+                // await deleteTransaction(transactionId);
                 alert('Transaksi berhasil dihapus!');
+                location.reload();
             } catch (error) {
                 console.error('Error menghapus transaksi:', error);
                 alert('Gagal menghapus transaksi: ' + error.message);
@@ -1005,6 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     <script type="module">
         import * as FirebaseDBModule from './firebase.js';
+        window.FirebaseDB = FirebaseDB;
         
         // Assign FirebaseDB ke variabel global
         window.FirebaseDB = FirebaseDBModule;
