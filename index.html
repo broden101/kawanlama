@@ -1,1302 +1,162 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kasir Kopitiam Kawan Lama</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-        }
-        body {
-            background: #f4f4f4;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .header {
-            background: #ab342f;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .nav {
-            background: white;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .nav button {
-            padding: 8px 16px;
-            margin-right: 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            background: #eee;
-        }
-        .nav button.active {
-            background: #ab342f;
-            color: white;
-        }
-        
-        /* Styles untuk Kasir */
-        .menu-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .menu-item {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            cursor: pointer;
-        }
-        .menu-item:hover {
-            transform: translateY(-5px);
-            transition: transform 0.2s;
-        }
-        .menu-item img {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-        .cart {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .cart-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .payment-options {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .payment-btn {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid #ab342f;
-            border-radius: 4px;
-            background: white;
-            color: #ab342f;
-            cursor: pointer;
-        }
-        .payment-btn.selected {
-            background: #ab342f;
-            color: white;
-        }
-        
-        /* Styles untuk Dapur */
-        .dapur-orders {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
-        .order-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #eee;
-        }
-        .order-number {
-            font-weight: bold;
-            color: #ab342f;
-        }
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.875rem;
-            color: white;
-        }
-        .status-new { background: #dc3545; }
-        .status-cooking { background: #ffc107; color: black; }
-        .status-ready { background: #28a745; }
-        .status-active { background: #28a745; }
-        .status-inactive { background: #dc3545; }
-        
-        .btn {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 10px;
-            color: white;
-        }
-        .btn-start { background: #ffc107; color: black; }
-        .btn-complete { background: #28a745; }
-        
-        /* Styles untuk Table */
-        .table-container {
-            margin-top: 20px;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .table th, .table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        .table th {
-            background: #ab342f;
-            color: white;
-        }
-        .table tr:last-child td {
-            border-bottom: none;
-        }
-        
-        /* Add Menu Button */
-        .add-menu-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-bottom: 20px;
-        }
-        
-        .action-btn {
-            padding: 5px 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            color: white;
-            margin-right: 5px;
-        }
-        .edit-btn {
-            background: #ffc107;
-            color: black;
-        }
-        .toggle-btn-active {
-            background: #dc3545;
-        }
-        .toggle-btn-inactive {
-            background: #28a745;
-        }
-                .action-btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .action-btn:hover {
-            opacity: 0.9;
-        }
-        .filter-btn {
-            padding: 8px 16px;
-            border: 2px solid #ab342f;
-            background: white;
-            color: #ab342f;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { 
+    getDatabase,
+    ref,
+    push,
+    set,
+    onValue,
+    update,
+    remove 
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
-        .filter-btn.active {
-            background: #ab342f;
-            color: white;
-        }
+const firebaseConfig = {
+    apiKey: "AIzaSyDglb9lO6b7mMnDzOwE1i9hWGUNpwPrcKs",
+    authDomain: "kawan-lama-542e6.firebaseapp.com",
+    databaseURL: "https://kawan-lama-542e6-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kawan-lama-542e6",
+    storageBucket: "kawan-lama-542e6.firebasestorage.app",
+    messagingSenderId: "1013787942051",
+    appId: "1:1013787942051:web:fa198540c5a610aa577316",
+    measurementId: "G-MPX5RR24J5"
+};
 
-        .filter-btn:hover {
-            opacity: 0.9;
-        }
+// Firebase Initialization
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-        #kasir-page {
-            display: block;
-        }
-        .action-btn {
-            padding: 4px 8px;
-            border: none;
-            border-radius: 4px;
-            color: white;
-            cursor: pointer;
-            font-size: 12px;
-            margin: 0 2px;
-        }
-    </style>
-    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
-</head>
-<body>
-    <div class="header">
-        <h1>Kopitiam Kawan Lama</h1>
-    </div>
-    
-    <div class="container">
-        <div class="nav">
-            <button onclick="showPage('kasir')" class="active">Kasir</button>
-            <button onclick="showPage('dapur')">Dapur</button>
-            <button onclick="showPage('daftar')">Daftar Menu</button>
-            <button onclick="showPage('history')">Riwayat</button>
-        </div>
+// Firebase References
+const menuRef = ref(db, "menu");
+const ordersRef = ref(db, "orders");
+const historyRef = ref(db, "history");
 
-        <!-- Kasir Page -->
-        <div id="kasir-page">
-            <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
-                <input type="text" id="search-input" placeholder="Cari menu..." oninput="searchMenu()" 
-                       style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                <button class="filter-btn active" onclick="filterMenu('all')">Semua</button>
-                <button class="filter-btn" onclick="filterMenu('makanan')">Makanan</button>
-                <button class="filter-btn" onclick="filterMenu('minuman')">Minuman</button>
-                <button class="filter-btn" onclick="filterMenu('toast')">Toast</button>
-                <button class="filter-btn" onclick="filterMenu('kopi')">Kopi</button>
-                <button class="filter-btn" onclick="filterMenu('hangat')">Hangat</button>
-                <button class="filter-btn" onclick="filterMenu('es')">Es</button>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 300px; gap: 20px;">
-                <div class="menu-container" id="menu-container"></div>
-                <div class="cart">
-                    <h2>Pesanan</h2>
-                    <div>
-                        <label for="customer-name" style="font-weight: bold;">No Meja:</label>
-                        <input type="text" id="customer-name" placeholder="Masukkan nomor meja" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
-                    </div>
-                    <div id="cart-items"></div>
-                    <div style="font-size: 1.2em; font-weight: bold; margin: 20px 0; text-align: right;">
-                        Total: Rp <span id="total">0</span>
-                    </div>
-                    <div class="payment-options">
-                        <button class="payment-btn selected" id="cash-btn" onclick="selectPayment('cash')">Tunai</button>
-                        <button class="payment-btn" id="qris-btn" onclick="selectPayment('qris')">QRIS</button>
-                    </div>
-                    <div class="payment-timing" style="margin: 10px 0;">
-                        <label style="margin-right: 10px;">
-                            <input type="radio" name="payment-timing" id="pay-now" checked>
-                            Bayar Sekarang
-                        </label>
-                        <label>
-                            <input type="radio" name="payment-timing" id="pay-later">
-                            Bayar Nanti
-                        </label>
-                    </div>
-                    <button class="btn btn-complete" onclick="checkout()">Bayar</button>
-                </div>
-            </div>
-        </div>
-        
+function snapshotToArray(snapshot) {
+    const data = snapshot.val();
+    return data
+        ? Object.entries(data).map(([id, value]) => ({ id, ...value }))
+        : [];
+}
 
-        <!-- Dapur Page -->
-        <div id="dapur-page" style="display: none;">
-            <div class="dapur-orders" id="dapur-orders">
-                <!-- Orders will be rendered here -->
-            </div>
-        </div>
+export function saveMenu(menuItem) {
+    if (!menuItem.nama || !menuItem.kategori || !menuItem.harga) {
+        throw new Error("Menu harus memiliki nama, kategori, dan harga.");
+    }
+    return push(menuRef, menuItem);
+}
 
-        <!-- Daftar Menu Page -->
-        <div id="daftar-page" style="display: none;">
-            <button class="add-menu-btn" onclick="tambahMenu()">+ Tambah Menu</button>
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Nama Menu</th>
-                            <th>Kategori</th>
-                            <th>Harga</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="menu-list"></tbody>
-                </table>
-            </div>
-        </div>
+export function updateMenuItem(id, updates) {
+    const menuItemRef = ref(db, `menu/${id}`);
+    return update(menuItemRef, updates);
+}
 
-        <!-- History Page -->
-        <div id="history-page" style="display: none;">
-            <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <label for="start-date">Range Tanggal:</label>
-                <input type="date" id="start-date" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                <label for="sampai">-</label>
-                <input type="date" id="end-date" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                <button onclick="filterHistoryByRange()">Filter</button>
-                <button onclick="resetHistoryFilter()">Reset</button>
-            </div>
-            
-            <div class="table-container">
-                <!-- Tambahkan div untuk tombol export -->
-                <div style="padding: 10px; display: flex; justify-content: flex-end; background-color: white; border-bottom: 1px solid #eee;">
-                    <button onclick="exportToExcel()" 
-                            class="add-menu-btn" 
-                            style="margin-bottom: 0px;">
-                        Export ke Excel
-                    </button>
-                </div>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Nama</th>
-                            <th>Pesanan</th>
-                            <th>Quantity</th>
-                            <th>Harga</th>
-                            <th>Total</th>
-                            <th>Pembayaran</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-list"></tbody>
-                </table>
-            </div>
-            <div id="total-income-container" style="margin-top: 20px; padding: 10px; background: #f4f4f4; border-radius: 8px; text-align: right; font-size: 1.2em; font-weight: bold;">
-                Total Pendapatan: Rp <span id="total-income">0</span>
-            </div>
-        </div>
+export function deleteMenuItem(id) {
+    const menuItemRef = ref(db, `menu/${id}`);
+    return remove(menuItemRef);
+}
 
-    <script>
-    // Global variables
-                var menuItems = [
-                { id: 1, nama: 'Kopi Malaysia', kategori: 'minuman', harga: 18000, status: 'active' },
-                { id: 2, nama: 'Nasi Goreng', kategori: 'makanan', harga: 25000, status: 'active' },
-                { id: 3, nama: 'Teh Tarik', kategori: 'minuman', harga: 15000, status: 'active' },
-                { id: 4, nama: 'Kaya Toast', kategori: 'makanan', harga: 12000, status: 'active' },
-                { id: 5, nama: 'Nanas Toast', kategori: 'makanan', harga: 10000, status: 'active' },
-                { id: 6, nama: 'Mie Goreng', kategori: 'makanan', harga: 20000, status: 'active' }
-        ];
-        var cart = [];
-        var selectedPayment = 'cash';
-        var transactionHistory = [];
-        var kitchenOrders = [];
-        var FirebaseDB;
-        
-        function searchMenu() {
-            const searchText = document.getElementById('search-input').value.trim().toLowerCase();
-            const container = document.getElementById('menu-container');
+export function listenToMenu(callback) {
+    return onValue(menuRef, (snapshot) => {
+        const menuItems = snapshotToArray(snapshot);
+        callback(menuItems);
+    });
+}
 
-            const filteredMenus = menuItems.filter(item => 
-                item.nama.toLowerCase().includes(searchText) && item.status === 'active'
-            );
+export function saveOrder(order) {
+    if (!order.customerName || !order.items || !Array.isArray(order.items)) {
+        throw new Error("Order harus memiliki nama pelanggan dan items.");
+    }
+    return push(ordersRef, order);
+}
 
-            container.innerHTML = filteredMenus.map(item => `
-                <div class="menu-item" onclick="addToCart('${item.id}')">
-                    <img src="https://via.placeholder.com/200x150" alt="${item.nama}">
-                    <h3>${item.nama}</h3>
-                    <p>Rp ${item.harga.toLocaleString()}</p>
-                </div>
-            `).join('');
-        }
+export function updateOrderStatus(id, status) {
+    const orderRef = ref(db, `orders/${id}`);
+    return update(orderRef, { status });
+}
+
+export function updatePaymentStatus(transactionId) {
+    const transactionRef = ref(db, `history/${transactionId}`);
+    return update(transactionRef, { paymentStatus: 'paid' });
+}
 
 
-        // Fungsi-fungsi yang dipanggil dari HTML
-        function showPage(page) {
-            document.getElementById('kasir-page').style.display = page === 'kasir' ? 'block' : 'none';
-            document.getElementById('dapur-page').style.display = page === 'dapur' ? 'block' : 'none';
-            document.getElementById('daftar-page').style.display = page === 'daftar' ? 'block' : 'none';
-            document.getElementById('history-page').style.display = page === 'history' ? 'block' : 'none';
-    
-            document.querySelectorAll('.nav button').forEach(btn => {
-                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(page));
-            });
-    
-            if (page === 'daftar') renderMenuList();
-            if (page === 'history') renderHistory();
-            if (page === 'dapur') renderDapurOrders();
-        }
+export function listenToOrders(callback, statusFilter = null) {
+    return onValue(ordersRef, (snapshot) => {
+        const ordersArray = snapshotToArray(snapshot);
+        const filteredOrders = statusFilter
+            ? ordersArray.filter(order => order.status === statusFilter)
+            : ordersArray;
+        callback(filteredOrders);
+    });
+}
 
-
-        function filterMenu(category) {
-            // Reset input pencarian
-            document.getElementById('search-input').value = '';
-            
-            const container = document.getElementById('menu-container');
-            const activeMenus = menuItems.filter(item => item.status === 'active');
-
-            let filteredMenus;
-            switch (category) {
-                case 'all':
-                    filteredMenus = activeMenus;
-                    break;
-                case 'makanan':
-                    filteredMenus = activeMenus.filter(item => item.kategori === 'makanan');
-                    break;
-                case 'minuman':
-                    filteredMenus = activeMenus.filter(item => item.kategori === 'minuman');
-                    break;
-                case 'toast':
-                    filteredMenus = activeMenus.filter(item => item.nama.toLowerCase().includes('toast'));
-                    break;
-                case 'kopi':
-                    filteredMenus = activeMenus.filter(item => item.nama.toLowerCase().includes('kopi'));
-                    break;
-                case 'hangat':
-                    filteredMenus = activeMenus.filter(item => item.nama.toLowerCase().includes('hangat'));
-                    break;
-                case 'es':
-                    filteredMenus = activeMenus.filter(item => item.nama.toLowerCase().includes('es'));
-                    break;
-                default:
-                    filteredMenus = activeMenus;
-            }
-
-            container.innerHTML = filteredMenus.map(item => `
-                <div class="menu-item" onclick="addToCart('${item.id}')">
-                    <img src="https://via.placeholder.com/200x150" alt="${item.nama}">
-                    <h3>${item.nama}</h3>
-                    <p>Rp ${item.harga.toLocaleString()}</p>
-                </div>
-            `).join('');
-                }
-                    document.addEventListener('DOMContentLoaded', () => {
-                        filterMenu('all');
-                    });
-        
-        function addToCart(id) {
-            const item = menuItems.find(item => item.id === id); // Perhatikan tipe ID
-            if (!item) {
-                console.error(`Item tidak ditemukan untuk ID: ${id}`);
-                return;
-            }
-            
-            console.log(`Item ditemukan:`, item); // Debugging
-            const existingItem = cart.find(cartItem => cartItem.id === id);
-            if (existingItem) {
-                existingItem.quantity++;
-            } else {
-                cart.push({ ...item, quantity: 1 });
-            }
-            
-            updateCart();
-        }
-            window.addToCart = addToCart;
-           
-        function removeFromCart(id) {
-            const index = cart.findIndex(item => item.id === id);
-            if (index !== -1) {
-                if (cart[index].quantity > 1) cart[index].quantity--;
-                else cart.splice(index, 1);
-                updateCart();   
-            }
-        }
-        function selectPayment(method) {
-            selectedPayment = method;
-            document.getElementById('cash-btn').classList.toggle('selected', method === 'cash');
-            document.getElementById('qris-btn').classList.toggle('selected', method === 'qris');
-        }
-        function updateCart() {
-            const cartContainer = document.getElementById('cart-items');
-            cartContainer.innerHTML = cart.map(item => `
-                <div class="cart-item">
-                    <span>${item.nama} x ${item.quantity}</span>
-                    <span>
-                        Rp ${(item.harga * item.quantity).toLocaleString()}
-                        <button onclick="removeFromCart(${item.id})" style="padding: 2px 8px; margin-left: 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">-</button>
-                    </span>
-                </div>
-            `).join('');
-
-            const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
-            document.getElementById('total').textContent = total.toLocaleString();
-        }
-    
-        function tambahMenu() {
-            const nama = prompt("Nama menu:");
-            if (!nama) return;
-    
-            const kategori = prompt("Kategori (minuman/makanan):");
-            if (!kategori || !['minuman', 'makanan'].includes(kategori.toLowerCase())) {
-                alert("Kategori harus minuman atau makanan!");
-                return;
-            }
-    
-            const harga = prompt("Harga:");
-            if (!harga || isNaN(harga) || parseInt(harga) <= 0) {
-                alert("Harga harus berupa angka positif!");
-                return;
-            }
-    
-            const newMenu = {
-                nama: nama,
-                kategori: kategori.toLowerCase(),
-                harga: parseInt(harga),
-                status: 'active'
-            };
-            
-            FirebaseDB.saveMenu(newMenu)
-                .then(() => {
-                    alert('Menu berhasil ditambahkan!');
-                })
-                .catch((error) => {
-                    alert('Error: ' + error.message);
-                });
-        }
-    
-        function editMenu(id) {
-            const menu = menuItems.find(item => item.id === id);
-            if (!menu) return;
-    
-            const nama = prompt("Nama menu:", menu.nama);
-            if (!nama) return;
-    
-            const kategori = prompt("Kategori (minuman/makanan):", menu.kategori);
-            if (!kategori || !['minuman', 'makanan'].includes(kategori.toLowerCase())) {
-                alert("Kategori harus minuman atau makanan!");
-                return;
-            }
-    
-            const harga = prompt("Harga:", menu.harga);
-            if (!harga || isNaN(harga) || parseInt(harga) <= 0) {
-                alert("Harga harus berupa angka positif!");
-                return;
-            }
-    
-            FirebaseDB.updateMenuItem(id, {
-                nama: nama,
-                kategori: kategori.toLowerCase(),
-                harga: parseInt(harga)
-            });
-        }
-    
-        function toggleStatus(id) {
-            const menu = menuItems.find(item => item.id === id);
-            if (menu) {
-                const newStatus = menu.status === 'active' ? 'inactive' : 'active';
-                FirebaseDB.updateMenuItem(id, { status: newStatus });
-            }
-        }
-    
-        function checkout() {
-    if (cart.length === 0) {
-        alert('Keranjang masih kosong!');
-        return;
+export function saveTransaction(transaction) {
+    if (!transaction.items || !Array.isArray(transaction.items)) {
+        throw new Error("Transaction harus memiliki items.");
     }
 
-    const customerName = document.getElementById('customer-name').value.trim();
-    if (!customerName) {
-        alert('Silakan masukkan nomor meja!');
-        return;
-    }
+    // Tambahkan properti default untuk metode pembayaran dan status pembayaran
+    transaction.paymentStatus = transaction.paymentStatus || 'pending'; // Default ke "pending"
+    transaction.paymentMethod = transaction.paymentMethod || 'not_selected'; // Default ke "not_selected"
+    transaction.date = transaction.date || new Date().toISOString(); // Tambahkan tanggal jika belum ada
 
-    const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
-    
-    // Pastikan setiap item memiliki informasi lengkap
-    const items = cart.map(item => ({
-        nama: item.nama,         // Gunakan nama item
-        name: item.nama,         // Duplikasi untuk kompatibilitas
-        quantity: item.quantity,
-        harga: item.harga,      // Simpan harga per item
-        price: item.harga       // Duplikasi untuk kompatibilitas
+    transaction.items = transaction.items.map(item => ({
+        name: item.nama || "Item Tidak Diketahui",
+        quantity: item.quantity || 1,
+        price: item.harga || 0
     }));
 
-    const order = {
-        orderNumber: `A${String(kitchenOrders.length + 1).padStart(3, '0')}`,
-        customerName: customerName,
-        status: 'new',
-        time: new Date().toISOString(),
-        items: items,
-        total: total,
-        paymentMethod: selectedPayment
-    };
-
-    // Simpan transaksi dengan detail item lengkap
-    FirebaseDB.saveTransaction({
-        date: new Date().toISOString(),
-        customerName: customerName,
-        items: items,
-        total: total,
-        paymentMethod: selectedPayment
-    })
-    .then(() => {
-        alert(`Pembayaran ${selectedPayment.toUpperCase()} berhasil!\nTotal: Rp ${total.toLocaleString()}`);
-        cart = [];
-        document.getElementById('customer-name').value = '';
-        updateCart();
-    })
-    .catch(error => {
-        console.error('Error saving transaction:', error);
-        alert('Error: ' + error.message);
-    });
-}
-        function updateOrderStatus(orderId, newStatus) {
-            FirebaseDB.updateOrderStatus(orderId, newStatus);
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-    // Set tanggal default ke hari ini
-    const today = new Date().toISOString().slice(0, 10); // Format YYYY-MM-DD
-    document.getElementById('start-date').value = today;
-    document.getElementById('end-date').value = today;
-
-    // Jalankan filter otomatis untuk menampilkan data hari ini
-    filterHistoryByRange();
-    });
-    let filteredTransactions = []; // Variabel global untuk data yang difilter
-
-    function filterHistoryByRange() {
-        const startDateInput = document.getElementById('start-date').value;
-        const endDateInput = document.getElementById('end-date').value;
-
-        const startDateTime = new Date(startDateInput + 'T00:00:00');
-        const endDateTime = new Date(endDateInput + 'T23:59:59');
-
-        filteredTransactions = transactionHistory.filter(transaction => {
-            const transactionDate = new Date(transaction.date);
-            return transactionDate >= startDateTime && transactionDate <= endDateTime;
-        });
-
-        renderTransactions(filteredTransactions); // Tampilkan data yang difilter
-        console.log("Data yang difilter:", filteredTransactions); // Debugging
-    }
-
-// Function to render all transactions without filtering
-function renderAllTransactions() {
-    renderTransactions(transactionHistory);
+    return push(historyRef, transaction);
 }
 
-// Function to render transactions (either filtered or all)
-function renderTransactions(transactions) {
-    const container = document.getElementById('history-list');
-    
-    if (!transactions || !Array.isArray(transactions)) {
-        container.innerHTML = '<tr><td colspan="9" style="text-align: center;">Tidak ada transaksi</td></tr>';
-        document.getElementById('total-income').textContent = '0';
-        return;
-    }
-
-    container.innerHTML = transactions.map(transaction => {
-        return transaction.items.map((item, index) => `
-            <tr>
-                ${index === 0 ? `<td rowspan="${transaction.items.length + 1}">${new Date(transaction.date).toLocaleString('id-ID')}</td>` : ''}
-                ${index === 0 ? `<td rowspan="${transaction.items.length + 1}">${transaction.customerName || 'Tidak Diketahui'}</td>` : ''}
-                <td>${item.nama || item.name || 'Item Tidak Diketahui'}</td>
-                <td>
-                    ${item.quantity || 0}
-                    <button onclick="modifyQuantity('${transaction.id}', ${index}, 'decrease')" class="action-btn" style="background: #dc3545;">-</button>
-                    <button onclick="modifyQuantity('${transaction.id}', ${index}, 'increase')" class="action-btn" style="background: #28a745;">+</button>
-                </td>
-                <td>Rp ${(item.harga || item.price || 0).toLocaleString('id-ID')}</td>
-                ${index === 0 ? `<td rowspan="${transaction.items.length + 1}">Rp ${transaction.total.toLocaleString()}</td>` : ''}
-                ${index === 0 ? `
-                    <td rowspan="${transaction.items.length + 1}">
-                        <span class="status-badge" style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
-                            ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
-                        </span>
-                    </td>
-                ` : ''}
-                ${index === 0 ? `
-                    <td rowspan="${transaction.items.length + 1}">
-                        <span class="payment-status ${transaction.paymentStatus === 'paid' ? 'paid' : 'pending'}" 
-                              style="font-size: 1.5em; margin-right: 10px;">
-                            ${transaction.paymentStatus === 'paid' ? '✓' : '✗'}
-                        </span>
-                        ${transaction.paymentStatus === 'pending' ? `
-                            <button onclick="updatePaymentStatus('${transaction.id}', 'paid')" 
-                                    class="action-btn" style="background: #28a745;">
-                                Bayar
-                            </button>
-                        ` : ''}
-                    </td>
-                ` : ''}
-                ${index === 0 ? `
-                    <td rowspan="${transaction.items.length + 1}">
-                        <button onclick="deleteTransaction('${transaction.id}')" 
-                                class="action-btn" style="background: #dc3545;">
-                            Hapus
-                        </button>
-                    </td>
-                ` : ''}
-            </tr>
-        `).join('');
-    }).join('');
-
-    const totalIncome = transactions
-        .filter(t => t.paymentStatus === 'paid')
-        .reduce((sum, transaction) => sum + (transaction.total || 0), 0);
-    document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
+export function updateTransaction(transactionId, updatedData) {
+    const transactionRef = ref(db, `history/${transactionId}`);
+    return update(transactionRef, updatedData);
 }
 
 
-function addModalHTML() {
-    const modal = document.createElement('div');
-    modal.id = 'addItemModal';
-    modal.className = 'modal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Tambah Item Menu</h2>
-            </div>
-            <div class="menu-selection">
-                ${menuItems.map(item => {
-                    // Hanya tampilkan menu yang aktif
-                    if (item.status === 'active') {
-                        return `
-                            <div class="menu-option">
-                                <div class="menu-info">
-                                    <span class="menu-name">${item.nama}</span>
-                                    <span class="menu-price">Rp ${item.harga.toLocaleString()}</span>
-                                </div>
-                                <div class="menu-actions">
-                                    <input type="number" min="1" value="1" id="quantity-${item.id}" class="quantity-input">
-                                    <button onclick="addItemToTransaction('${window.currentTransactionId}', '${item.id}')" class="btn-tambah">
-                                        Tambah
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    return '';
-                }).join('')}
-            </div>
-            <div class="modal-footer">
-                <button onclick="closeAddItemModal()" class="btn-tutup">Tutup</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    // Tambahkan style untuk modal
-    const style = document.createElement('style');
-    style.textContent = `
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            width: 90%;
-            max-width: 600px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .modal-header {
-            background: #ab342f;
-            color: white;
-            padding: 15px 20px;
-            border-radius: 8px 8px 0 0;
-        }
-        .menu-selection {
-            max-height: 60vh;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        .menu-option {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-        }
-        .menu-info {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .menu-name {
-            font-weight: bold;
-        }
-        .menu-price {
-            color: #666;
-        }
-        .menu-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .quantity-input {
-            width: 60px;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .modal-footer {
-            padding: 15px 20px;
-            border-top: 1px solid #eee;
-            text-align: right;
-        }
-        .btn-tambah {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-tutup {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .payment-status {
-        display: inline-block;
-        margin-right: 10px;
-        font-size: 1.2em;
-        }
-
-        .payment-status.paid {
-            color: #28a745;
-        }
-
-        .payment-status.pending {
-            color: #dc3545;
-        }
-            `;
-            document.head.appendChild(style);
-        }
-
-function showAddItemModal(transactionId) {
-    window.currentTransactionId = transactionId;
-    const modal = document.getElementById('addItemModal');
-    if (!modal) {
-        addModalHTML();
-    }
-    document.getElementById('addItemModal').style.display = 'block';
-}
-
-function closeAddItemModal() {
-    document.getElementById('addItemModal').style.display = 'none';
-}
-
-async function addItemToTransaction(transactionId, menuItemId) {
-    try {
-        const transaction = transactionHistory.find(t => t.id === transactionId);
-        if (!transaction) {
-            throw new Error('Transaksi tidak ditemukan');
-        }
-
-        const menuItem = menuItems.find(item => item.id === menuItemId);
-        if (!menuItem) {
-            throw new Error('Item menu tidak ditemukan');
-        }
-
-        const quantity = parseInt(document.getElementById(`quantity-${menuItemId}`).value);
-        if (isNaN(quantity) || quantity < 1) {
-            throw new Error('Quantity tidak valid');
-        }
-
-        // Cek apakah item sudah ada di transaksi
-        const existingItemIndex = transaction.items.findIndex(item => 
-            (item.nama === menuItem.nama) || (item.name === menuItem.nama)
-        );
-
-        if (existingItemIndex !== -1) {
-            // Update quantity jika item sudah ada
-            transaction.items[existingItemIndex].quantity += quantity;
-        } else {
-            // Tambah item baru jika belum ada
-            transaction.items.push({
-                nama: menuItem.nama,
-                name: menuItem.nama,
-                quantity: quantity,
-                harga: menuItem.harga,
-                price: menuItem.harga
-            });
-        }
-
-        // Hitung ulang total
-        transaction.total = transaction.items.reduce((sum, item) => 
-            sum + ((item.harga || item.price) * item.quantity), 0
-        );
-
-        // Update di Firebase
-        await FirebaseDB.updateTransaction(transactionId, transaction);
+// In firebase.js
+export function listenToHistory(callback) {
+    return onValue(ref(db, 'history'), (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return callback([]);
         
-        closeAddItemModal();
-        alert('Item berhasil ditambahkan!');
+        const historyArray = Object.entries(data).map(([id, value]) => ({ id, ...value }));
+        callback(historyArray);
         
-        // Render ulang transaksi
-        renderTransactions(transactionHistory);
-    } catch (error) {
-        console.error('Error adding item:', error);
-        alert('Gagal menambahkan item: ' + error.message);
-    }
-}
-
-// Jalankan saat halaman dimuat
-document.addEventListener('DOMContentLoaded', () => {
-    addModalHTML();
-});
-
-async function modifyQuantity(transactionId, itemIndex, action) {
-    try {
-        // Get fresh data from transactionHistory
-        const transaction = {...transactionHistory.find(t => t.id === transactionId)};
-        if (!transaction) return;
-
-        const item = transaction.items[itemIndex];
-        if (!item) return;
-
-        // Update quantity
-        if (action === 'increase') {
-            item.quantity++;
-        } else if (action === 'decrease') {
-            if (item.quantity <= 1) {
-                if (!confirm('Hapus item ini?')) return;
-                transaction.items.splice(itemIndex, 1);
-                if (transaction.items.length === 0) {
-                    await window.FirebaseDB.deleteTransaction(transactionId);
-                    return;
-                }
-            } else {
-                item.quantity--;
-            }
-        }
-
-        // Recalculate total
-        transaction.total = transaction.items.reduce((sum, item) => 
-            sum + (item.price * item.quantity), 0
-        );
-
-        // Update in Firebase and wait for completion
-        await window.FirebaseDB.updateTransaction(transactionId, transaction);
-        
-        // Update local data
-        const index = transactionHistory.findIndex(t => t.id === transactionId);
-        if (index !== -1) {
-            transactionHistory[index] = transaction;
-        }
-        
-        // Render with updated local data
-        renderTransactions(transactionHistory);
-    } catch (error) {
-        console.error('Error:', error);
-    }
-}
-
-// 3. Fungsi untuk menghapus transaksi
-       async function deleteTransaction(transactionId) {
-            if (!confirm('Yakin ingin menghapus transaksi ini?')) {
-                return;
-            }
-
-            try {
-                await window.FirebaseDB.deleteTransaction(transactionId);
-                // or if using ES modules:
-                // await deleteTransaction(transactionId);
-                alert('Transaksi berhasil dihapus!');
-                location.reload();
-            } catch (error) {
-                console.error('Error menghapus transaksi:', error);
-                alert('Gagal menghapus transaksi: ' + error.message);
-            }
-        }
-
-
-
-// Function to reset date filters
-function resetHistoryFilter() {
-    document.getElementById('start-date').value = '';
-    document.getElementById('end-date').value = '';
-    renderAllTransactions();
-}
-
-// Add event listener for when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    renderAllTransactions();
-});
-
-    </script>
-    
-    <script type="module">
-        import * as FirebaseDBModule from './firebase.js';
-        window.FirebaseDB = FirebaseDB;
-        
-        // Assign FirebaseDB ke variabel global
-        window.FirebaseDB = FirebaseDBModule;
-    
-        // Fungsi-fungsi render
-        function renderMenu() {
-            const container = document.getElementById('menu-container');
-            const activeMenus = menuItems.filter(item => item.status === 'active');
+        // Update filtered transactions immediately
+        if (window.filteredTransactions) {
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            const startDateTime = new Date(startDate + 'T00:00:00');
+            const endDateTime = new Date(endDate + 'T23:59:59');
             
-            container.innerHTML = activeMenus.map(item => `
-                <div class="menu-item" onclick="addToCart('${item.id}')">
-                    <img src="https://via.placeholder.com/200x150" alt="${item.nama}">
-                    <h3>${item.nama}</h3>
-                    <p>Rp ${item.harga.toLocaleString()}</p>
-                </div>
-            `).join('');
-        }
-    
-        function renderMenuList() {
-            const container = document.getElementById('menu-list');
-            container.innerHTML = menuItems.map(item => `
-                <tr>
-                    <td>${item.nama}</td>
-                    <td>${item.kategori}</td>
-                    <td>Rp ${item.harga.toLocaleString()}</td>
-                    <td>
-                        <span class="status-badge status-${item.status}">
-                            ${item.status === 'active' ? 'Aktif' : 'Nonaktif'}
-                        </span>
-                    </td>
-                    <td>
-                        <button class="action-btn edit-btn" onclick="editMenu('${item.id}')">
-                            Edit
-                        </button>
-                        <button class="action-btn ${item.status === 'active' ? 'toggle-btn-active' : 'toggle-btn-inactive'}" 
-                            onclick="toggleStatus('${item.id}')">
-                            ${item.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-    
-        function renderHistory(callback) {
-        console.log("Transaction History:", transactionHistory); // Debugging log
-        const container = document.getElementById('history-list');
-
-        container.innerHTML = transactionHistory.map(transaction => `
-            <tr>
-                <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString()}</td>
-                <td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>
-                ${transaction.items.map((item, index) => `
-                    <td>${item.name || 'Item Tidak Diketahui'}</td>
-                    <td>${item.quantity || 0}</td>
-                    <td>Rp ${(item.price || 0).toLocaleString()}</td>
-                    ${index === 0 
-                        ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>
-                        <td rowspan="${transaction.items.length}">
-                            <span class="status-badge" 
-                                style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
-                                ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
-                            </span>
-                        </td>` 
-                        : ''
-                    }
-            </tr>
-                `).join('')}
-        `).join('');
-
-        // Hitung total pendapatan
-        const totalIncome = transactionHistory.reduce((sum, transaction) => sum + transaction.total, 0);
-
-        // Tampilkan total pendapatan
-        document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
-
-        // Panggil callback setelah render selesai
-        if (callback && typeof callback === 'function') {
-            callback();
-        }
-    }
-
-
-        function renderDapurOrders() {
-            const container = document.getElementById('dapur-orders');
-            container.innerHTML = kitchenOrders.map(order => `
-                <div class="order-card">
-                    <div class="order-header">
-                        <span class="order-number">${order.orderNumber}</span>
-                        <span class="status-badge status-${order.status}">
-                            ${order.status === 'new' ? 'Baru' : 
-                              order.status === 'cooking' ? 'Dimasak' : 'Siap'}
-                        </span>
-                    </div>
-                    <div style="color: #666; margin-bottom: 10px;">
-                        ${new Date(order.time).toLocaleTimeString()}
-                    </div>
-                    <div style="margin: 10px 0;">
-                        ${order.items.map(item => `
-                            <div class="cart-item">
-                                <span>${item.name}</span>
-                                <span class="status-badge status-new">x${item.quantity}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                    ${order.status === 'new' ? `
-                        <button class="btn btn-start" onclick="updateOrderStatus('${order.id}', 'cooking')">
-                            Mulai Masak
-                        </button>
-                    ` : order.status === 'cooking' ? `
-                        <button class="btn btn-complete" onclick="updateOrderStatus('${order.id}', 'ready')">
-                            Selesai
-                        </button>
-                    ` : ''}
-                </div>
-            `).join('');
-        }
-    
-        function updateCart() {
-            const cartContainer = document.getElementById('cart-items');
-            cartContainer.innerHTML = cart.map(item => `
-                <div class="cart-item">
-                    <span>${item.nama} x ${item.quantity}</span>
-                    <span>
-                        Rp ${(item.harga * item.quantity).toLocaleString()}
-                        <button onclick="removeFromCart('${item.id}')">-</button>
-                    </span>
-                </div>
-            `).join('');
-    
-            const total = cart.reduce((sum, item) => sum + (item.harga * item.quantity), 0);
-            document.getElementById('total').textContent = total.toLocaleString();
-        }
-    
-        // Initialize
-        renderMenu();
-        
-        // Setup Firebase listeners
-        FirebaseDBModule.listenToMenu((items) => {
-            window.menuItems = items;
-            renderMenu();
-            renderMenuList();
-        });
-    
-        FirebaseDBModule.listenToOrders((orders) => {
-            window.kitchenOrders = orders;
-            renderDapurOrders();
-        });
-    
-        FirebaseDBModule.listenToHistory((history) => {
-            window.transactionHistory = history;
-    console.log("Data history yang diterima:", history); // Untuk debugging
-    renderTransactions(history);
-});
-    
-        // Make render functions globally accessible
-        window.renderMenu = renderMenu;
-        window.renderMenuList = renderMenuList;
-        window.renderHistory = renderHistory;
-        window.renderDapurOrders = renderDapurOrders;
-        window.updateCart = updateCart;
-        
-        function exportToExcel() {
-            console.log("Memulai export ke Excel...");
-            console.log("Data filteredTransactions:", filteredTransactions);
-
-            if (!filteredTransactions || filteredTransactions.length === 0) {
-                alert("Tidak ada data transaksi yang sesuai dengan filter untuk diekspor.");
-                return;
-            }
-
-            // Data untuk Excel
-            const sheetData = [
-                ['Tanggal', 'Nama', 'Pesanan', 'Quantity', 'Harga', 'Total', 'Metode Pembayaran']
-            ];
-
-            // Mapping data transaksi yang telah difilter
-            filteredTransactions.forEach(transaction => {
-                transaction.items.forEach((item, index) => {
-                    sheetData.push([
-                        index === 0 ? new Date(transaction.date).toLocaleString('id-ID') : '', // Tanggal hanya di baris pertama transaksi
-                        index === 0 ? transaction.customerName || 'Tidak Diketahui' : '',     // Nama hanya di baris pertama transaksi
-                        item.name || 'Tidak Diketahui',                                       // Nama item
-                        item.quantity || 0,                                                  // Jumlah
-                        `Rp ${(item.price || 0).toLocaleString('id-ID')}`,                   // Harga
-                        index === 0 ? `Rp ${transaction.total.toLocaleString('id-ID')}` : '', // Total hanya di baris pertama
-                        index === 0 ? (transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS') : '' // Metode Pembayaran
-                    ]);
-                });
-
-                sheetData.push([]); // Baris kosong untuk pemisah antar transaksi
+            window.filteredTransactions = historyArray.filter(transaction => {
+                const transactionDate = new Date(transaction.date);
+                return transactionDate >= startDateTime && transactionDate <= endDateTime;
             });
-
-            // Tambahkan ringkasan untuk transaksi yang difilter
-            const totalIncome = filteredTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
-            sheetData.push([]);
-            sheetData.push(['Ringkasan Penjualan']);
-            sheetData.push(['Total Penjualan', `Rp ${totalIncome.toLocaleString('id-ID')}`]);
-            sheetData.push(['Jumlah Transaksi', filteredTransactions.length]);
-            sheetData.push([
-                'Pembayaran Tunai', 
-                `Rp ${filteredTransactions
-                    .filter(t => t.paymentMethod === 'cash')
-                    .reduce((sum, t) => sum + t.total, 0).toLocaleString('id-ID')} (${filteredTransactions.filter(t => t.paymentMethod === 'cash').length} transaksi)`
-            ]);
-            sheetData.push([
-                'Pembayaran QRIS', 
-                `Rp ${filteredTransactions
-                    .filter(t => t.paymentMethod === 'qris')
-                    .reduce((sum, t) => sum + t.total, 0).toLocaleString('id-ID')} (${filteredTransactions.filter(t => t.paymentMethod === 'qris').length} transaksi)`
-            ]);
-
-            // Buat workbook dan sheet
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(sheetData);
-
-            XLSX.utils.book_append_sheet(wb, ws, "Laporan Penjualan");
-
-            // Simpan file Excel
-            const dateStr = new Date().toISOString().slice(0, 10);
-            const fileName = `Laporan_Penjualan_${dateStr}.xlsx`;
-            XLSX.writeFile(wb, fileName);
-
-            console.log("Export ke Excel selesai!");
+            
+            renderTransactions(window.filteredTransactions);
         }
-    
-
-
-    // Tambahkan ke window scope
-    window.exportToExcel = exportToExcel;
-    window.transactionHistory = transactionHistory;
-    async function modifyQuantity(transactionId, itemIndex, action) {
-    try {
-        const transaction = transactionHistory.find(t => t.id === transactionId);
-        if (!transaction) return;
-
-        const item = transaction.items[itemIndex];
-        if (!item) return;
-
-        if (action === 'increase') {
-            item.quantity++;
-        } else if (action === 'decrease') {
-            if (item.quantity <= 1) {
-                if (!confirm('Hapus item ini?')) return;
-                transaction.items.splice(itemIndex, 1);
-                if (transaction.items.length === 0) {
-                    await window.FirebaseDB.deleteTransaction(transactionId);
-                    return;
-                }
-            } else {
-                item.quantity--;
-            }
-        }
-
-        transaction.total = transaction.items.reduce((sum, item) => 
-            sum + (item.price * item.quantity), 0
-        );
-
-        await window.FirebaseDB.updateTransaction(transactionId, transaction);
-        // Let Firebase listener handle the update
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Gagal mengubah quantity: ' + error.message);
-    }
+    });
 }
-    </script>
-        
-</body>
-</html>
+
+
+export function deleteTransaction(transactionId) {
+    const transactionRef = ref(db, `history/${transactionId}`);
+    return remove(transactionRef);
+}
+
+// Membuat objek FirebaseDB untuk expor
+const FirebaseDB = {
+    saveMenu,
+    updateMenuItem,
+    deleteMenuItem,
+    listenToMenu,
+    saveOrder,
+    updateOrderStatus,
+    listenToOrders,
+    saveTransaction,
+    listenToHistory,
+    deleteTransaction
+};
+
+export { FirebaseDB as default };
