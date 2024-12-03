@@ -643,13 +643,45 @@
         const startDateTime = new Date(startDateInput + 'T00:00:00');
         const endDateTime = new Date(endDateInput + 'T23:59:59');
 
+        // Filter transaksi berdasarkan range tanggal
         filteredTransactions = transactionHistory.filter(transaction => {
             const transactionDate = new Date(transaction.date);
             return transactionDate >= startDateTime && transactionDate <= endDateTime;
         });
 
-        renderTransactions(filteredTransactions); // Tampilkan data yang difilter
-        console.log("Data yang difilter:", filteredTransactions); // Debugging
+        // Hitung total pendapatan dari transaksi yang terfilter
+        const totalIncome = filteredTransactions.reduce((sum, transaction) => {
+            // Hanya hitung transaksi yang sudah lunas
+            if (transaction.paymentStatus !== 'pending') {
+                return sum + (transaction.total || 0);
+            }
+            return sum;
+        }, 0);
+
+        // Update tampilan
+        renderTransactions(filteredTransactions);
+        document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
+    }
+
+    // Fungsi reset filter
+    function resetHistoryFilter() {
+        document.getElementById('start-date').value = '';
+        document.getElementById('end-date').value = '';
+        
+        // Reset ke semua transaksi
+        filteredTransactions = transactionHistory;
+        
+        // Hitung ulang total untuk semua transaksi
+        const totalIncome = transactionHistory.reduce((sum, transaction) => {
+            if (transaction.paymentStatus !== 'pending') {
+                return sum + (transaction.total || 0);
+            }
+            return sum;
+        }, 0);
+
+        // Update tampilan
+        renderTransactions(filteredTransactions);
+        document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
     }
 
 // Function to render all transactions without filtering
@@ -1096,43 +1128,66 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
         }
     
-        function renderHistory(callback) {
-        console.log("Transaction History:", transactionHistory); // Debugging log
-        const container = document.getElementById('history-list');
+        function renderTransactions(transactions) {
+    const container = document.getElementById('history-list');
+    if (!transactions || !Array.isArray(transactions)) return;
 
-        container.innerHTML = transactionHistory.map(transaction => `
+    container.innerHTML = transactions.map(transaction => {
+        // Handle case where items might be undefined
+        if (!transaction.items || !Array.isArray(transaction.items)) return '';
+
+        return transaction.items.map((item, index) => `
             <tr>
-                <td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString()}</td>
-                <td rowspan="${transaction.items.length}">${transaction.customerName || 'Tidak Diketahui'}</td>
-                ${transaction.items.map((item, index) => `
-                    <td>${item.name || 'Item Tidak Diketahui'}</td>
-                    <td>${item.quantity || 0}</td>
-                    <td>Rp ${(item.price || 0).toLocaleString()}</td>
-                    ${index === 0 
-                        ? `<td rowspan="${transaction.items.length}">Rp ${transaction.total.toLocaleString()}</td>
-                        <td rowspan="${transaction.items.length}">
-                            <span class="status-badge" 
-                                style="background: ${transaction.paymentMethod === 'cash' ? '#28a745' : '#17a2b8'}">
-                                ${transaction.paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}
-                            </span>
-                        </td>` 
-                        : ''
-                    }
+                ${index === 0 ? `<td rowspan="${transaction.items.length}">${new Date(transaction.date).toLocaleString('id-ID')}</td>` : ''}
+                ${index === 0 ? `<td rowspan="${transaction.items.length}">${transaction.customerName || '-'}</td>` : ''}
+                <td>${item.nama || item.name || '-'}</td>
+                <td>${item.quantity || 0}</td>
+                <td>Rp ${((item.harga || item.price) || 0).toLocaleString('id-ID')}</td>
+                ${index === 0 ? `<td rowspan="${transaction.items.length}">Rp ${(transaction.total || 0).toLocaleString('id-ID')}</td>` : ''}
+                ${index === 0 ? `
+                    <td rowspan="${transaction.items.length}">
+                        ${transaction.paymentMethod === 'cash' ? 'Tunai' : 
+                          transaction.paymentMethod === 'qris' ? 'QRIS' : 'Belum Memilih'}
+                    </td>
+                    <td rowspan="${transaction.items.length}">
+                        ${transaction.paymentStatus === 'pending' ? 'Belum Lunas' : 'Lunas'}
+                    </td>
+                ` : ''}
             </tr>
-                `).join('')}
         `).join('');
+    }).join('');
 
-        // Hitung total pendapatan
-        const totalIncome = transactionHistory.reduce((sum, transaction) => sum + transaction.total, 0);
-
-        // Tampilkan total pendapatan
-        document.getElementById('total-income').textContent = totalIncome.toLocaleString('id-ID');
-
-        // Panggil callback setelah render selesai
-        if (callback && typeof callback === 'function') {
-            callback();
+    // Calculate total income
+    const totalIncome = transactions.reduce((sum, transaction) => {
+        // Only include paid transactions
+        if (transaction.paymentStatus === 'paid') {
+            return sum + (transaction.total || 0);
         }
+        return sum;
+    }, 0);
+
+    // Update the total income display
+    const totalIncomeElement = document.getElementById('total-income');
+    if (totalIncomeElement) {
+        totalIncomeElement.textContent = totalIncome.toLocaleString('id-ID');
     }
+}
+
+// Update filter function to include total calculation
+function filterHistoryByRange() {
+    const startDateInput = document.getElementById('start-date').value;
+    const endDateInput = document.getElementById('end-date').value;
+
+    const startDateTime = new Date(startDateInput + 'T00:00:00');
+    const endDateTime = new Date(endDateInput + 'T23:59:59');
+
+    filteredTransactions = transactionHistory.filter(transaction => {
+        const transactionDate = new Date(transaction.date);
+        return transactionDate >= startDateTime && transactionDate <= endDateTime;
+    });
+
+    renderTransactions(filteredTransactions);
+}
 
 
         function renderDapurOrders() {
